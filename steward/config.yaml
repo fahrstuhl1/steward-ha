@@ -1,4 +1,4 @@
-ame: Steward
+name: Steward
 version: "1.0.2"
 slug: steward
 description: Home Assistant Task Planner — recurring tasks, scheduling, notifications and gamification
