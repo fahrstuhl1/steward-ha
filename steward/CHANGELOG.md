@@ -1,52 +1,48 @@
-## 1.11.0
+# Changelog
 
-### Notes
-- Browser Push notifications removed entirely — HA push via Companion App covers this use case fully
-
-### Improvements
-- Removed `web-push` dependency from package.json
-- Removed VAPID key generation and storage
-- Removed push subscription management from Settings
-- Removed push-related API endpoints (`/api/vapid-public-key`, `/api/push-status`, `/api/push-subscribe`, `/api/test-push`)
-- Notification guards now only check `ha` and `email` channels
+## 1.0 (Steward)
+- **Release:** First official release under the name **Steward**.
+- **Note:** This project is the direct continuation of "Haushaltsplan". Existing users, please refer to the installation instructions in the README regarding the name/slug change.
+- Includes all proven features, stability improvements, and the entire feature set from the project's history.
 
 ---
+
+## Legacy History (Haushaltsplan 1.0.0 - 1.11.0)
+
+## 1.11.0
+### Notes
+- Browser Push notifications removed entirely — HA push via Companion App covers this use case fully.
+### Improvements
+- Removed `web-push` dependency from package.json.
+- Removed VAPID key generation and storage.
+- Removed push subscription management from Settings.
+- Removed push-related API endpoints (`/api/vapid-public-key`, `/api/push-status`, `/api/push-subscribe`, `/api/test-push`).
+- Notification guards now only check `ha` and `email` channels.
 
 ## 1.10.9
-
 ### Fixes
-- Import and export fetch URLs had a leading `/` — broke under HA Ingress/nabu.casa (404)
-
----
+- Import and export fetch URLs had a leading `/` — broke under HA Ingress/nabu.casa (404).
 
 ## 1.10.8
-
 ### Fixes
-- Import silently failed for large backup files — raised Express JSON body limit to 20mb
-- Import errors now show a proper error message instead of failing silently
-
----
+- Import silently failed for large backup files — raised Express JSON body limit to 20mb.
+- Import errors now show a proper error message instead of failing silently.
 
 ## 1.10.7
-
 ### Features
-- New: **Backup & Restore** — export all data (tasks, settings, users, rooms, triggers, completions, archive) as a JSON file and import it into any Steward instance
-- Export available via Settings → Backup & Restore → Export backup
-- Import replaces all current data, runs migration automatically and restores all timers and sensors
-
----
+- New: **Backup & Restore** — export all data (tasks, settings, users, rooms, triggers, completions, archive) as a JSON file and import it into any Steward instance.
+- Export available via Settings → Backup & Restore → Export backup.
+- Import replaces all current data, runs migration automatically and restores all timers and sensors.
 
 ## 1.10.6
-
 ### Notes
-- App renamed from **Haushaltsplan** to **Steward**
-- Add-on slug changed from `haushaltsplan` to `steward` — requires reinstall in HA
-- HA sensor entity IDs changed: `sensor.haushaltsplan_*` → `sensor.steward_*` — update any existing automations
-
+- App renamed from **Haushaltsplan** to **Steward**.
+- Add-on slug changed from `haushaltsplan` to `steward` — requires reinstall in HA.
+- HA sensor entity IDs changed: `sensor.haushaltsplan_*` → `sensor.steward_*` — update any existing automations.
 ### Improvements
-- Sensor entity IDs and friendly names updated to English (`sensor.steward_due`, `sensor.steward_due_soon`, `sensor.steward_<user>_due`)
-- Email sender name and subject updated to Steward
-- Sidebar icon changed to `mdi:clipboard-list`
+- Sensor entity IDs and friendly names updated to English (`sensor.steward_due`, `sensor.steward_due_soon`, `sensor.steward_<user>_due`).
+- Email sender name and subject updated to Steward.
+- Sidebar icon changed to `mdi:clipboard-list`.
 
 ---
 
