@@ -9,7 +9,7 @@ A Home Assistant add-on for managing household tasks together. Assign tasks to p
 
 ## Installation
 
-[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/?repository_url=https://github.com/fahrstuhl1/steward-ha&repository_type=addon)
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=fahrstuhl1&repository=steward-ha&category=addon)
 
 1. Open HACS → **Integrations** → ⋮ → **Custom Repositories**
 2. Enter URL: `https://github.com/fahrstuhl1/steward-ha`
