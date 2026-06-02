@@ -1,0 +1,32 @@
+{
+  "tasks": [
+    { "id": "1", "name": "Vacuum living room",   "assignee": "alle", "room": "living_room", "interval": "weekly",    "scheduleMode": "strict", "priority": "normal", "intervalCustomDays": null, "nextDueAt": null, "startDate": null, "dueDate": null, "dueTime": null, "notifyOffset": 0, "snoozedUntil": null, "lastComment": null, "lastCompleted": null, "completedBy": null, "lastNotified": null, "notifications": { "email": false, "ha": true } },
+    { "id": "2", "name": "Clean bathroom",       "assignee": "alle", "room": "bathroom",    "interval": "weekly",    "scheduleMode": "strict", "priority": "normal", "intervalCustomDays": null, "nextDueAt": null, "startDate": null, "dueDate": null, "dueTime": null, "notifyOffset": 0, "snoozedUntil": null, "lastComment": null, "lastCompleted": null, "completedBy": null, "lastNotified": null, "notifications": { "email": false, "ha": true } },
+    { "id": "3", "name": "Change bed linen",     "assignee": "alle", "room": "bedroom",     "interval": "biweekly",  "scheduleMode": "strict", "priority": "normal", "intervalCustomDays": null, "nextDueAt": null, "startDate": null, "dueDate": null, "dueTime": null, "notifyOffset": 0, "snoozedUntil": null, "lastComment": null, "lastCompleted": null, "completedBy": null, "lastNotified": null, "notifications": { "email": false, "ha": true } },
+    { "id": "4", "name": "Clean refrigerator",   "assignee": "alle", "room": "kitchen",     "interval": "monthly",   "scheduleMode": "strict", "priority": "normal", "intervalCustomDays": null, "nextDueAt": null, "startDate": null, "dueDate": null, "dueTime": null, "notifyOffset": 0, "snoozedUntil": null, "lastComment": null, "lastCompleted": null, "completedBy": null, "lastNotified": null, "notifications": { "email": false, "ha": true } }
+  ],
+  "settings": {
+    "users": [],
+    "rooms": [
+      { "id": "kitchen",     "name": "Kitchen",     "icon": "🍳" },
+      { "id": "living_room", "name": "Living Room", "icon": "🛋️" },
+      { "id": "bathroom",    "name": "Bathroom",    "icon": "🚿" },
+      { "id": "bedroom",     "name": "Bedroom",     "icon": "🛏️" },
+      { "id": "garden",      "name": "Garden",      "icon": "🌿" },
+      { "id": "general",     "name": "General",     "icon": "🏠" }
+    ],
+    "gmailUser": "",
+    "gmailAppPassword": "",
+    "haUrl": "",
+    "haToken": "",
+    "addonUrl": "",
+    "webhookSecret": "",
+    "haTriggers": [],
+    "gamificationEnabled": true,
+    "archiveDays": 180,
+    "planningDays": 7,
+    "theme": "dark"
+  },
+  "completions": [],
+  "archive": []
+}
