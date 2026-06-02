@@ -1,5 +1,10 @@
 # Changelog
+## 1.0.1
+### Improvements
+- add :active scale feedback to cards, buttons and check-btn
+- increase task-card padding and line-height for better readability
 
+---
 ## 1.0 (Steward)
 - **Release:** First official release under the name **Steward**.
 - **Note:** This project is the direct continuation of "Haushaltsplan". Existing users, please refer to the installation instructions in the README regarding the name/slug change.
