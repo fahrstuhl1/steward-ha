@@ -1,10 +1,22 @@
 # Changelog
+
+## 1.0.2
+### Improvements
+- Task modal: progressive disclosure — only name, room, assignee, type and interval visible by default
+- Due type selector replaced with two-button toggle (🔁 Recurring / 📅 One-time)
+- Interval dropdown replaced with horizontal chip selection
+- Priority, schedule mode, time and notifications moved behind "More options" toggle
+- Edit modal opens with all fields expanded automatically
+- 
+---
+
 ## 1.0.1
 ### Improvements
 - add :active scale feedback to cards, buttons and check-btn
 - increase task-card padding and line-height for better readability
 
 ---
+
 ## 1.0 (Steward)
 - **Release:** First official release under the name **Steward**.
 - **Note:** This project is the direct continuation of "Haushaltsplan". Existing users, please refer to the installation instructions in the README regarding the name/slug change.
