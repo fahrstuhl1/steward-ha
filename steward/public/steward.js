@@ -458,14 +458,45 @@ async function deleteTask(id) {
   await loadTasks();
 }
 
-function updateIntervalUI() { document.getElementById('customIntervalRow').style.display = document.getElementById('taskInterval').value === 'custom' ? '' : 'none'; }
+function updateIntervalUI() {
+  const val = document.getElementById('taskInterval').value;
+  document.getElementById('customIntervalRow').style.display = val === 'custom' ? '' : 'none';
+  document.querySelectorAll('.interval-chip').forEach(c => c.classList.toggle('active', c.dataset.value === val));
+}
 
+function setDueType(type) {
+  document.getElementById('taskInterval').value = document.getElementById('taskInterval').value || 'weekly';
+  document.getElementById('dueBtnInterval').classList.toggle('active', type === 'interval');
+  document.getElementById('dueBtnFixed').classList.toggle('active', type === 'fixed');
+  document.getElementById('intervalRow').style.display      = type === 'interval' ? '' : 'none';
+  document.getElementById('customIntervalRow').style.display = type === 'interval' && document.getElementById('taskInterval').value === 'custom' ? '' : 'none';
+  document.getElementById('fixedDateRow').style.display     = type === 'fixed' ? '' : 'none';
+  const panel = document.getElementById('moreOptionsPanel');
+  if (panel.style.display !== 'none') {
+    document.getElementById('scheduleModeRow').style.display = type === 'interval' ? '' : 'none';
+    document.getElementById('startDateRow').style.display    = type === 'interval' ? '' : 'none';
+  }
+}
+
+function toggleMoreOptions() {
+  const panel   = document.getElementById('moreOptionsPanel');
+  const chevron = document.getElementById('moreOptionsChevron');
+  const label   = document.getElementById('moreOptionsLabel');
+  const open    = panel.style.display === 'none';
+  panel.style.display = open ? '' : 'none';
+  chevron.textContent = open ? '▴' : '▾';
+  label.textContent   = open ? 'Fewer options' : 'More options';
+  if (open) {
+    const isInterval = document.getElementById('dueBtnInterval').classList.contains('active');
+    document.getElementById('scheduleModeRow').style.display = isInterval ? '' : 'none';
+    document.getElementById('startDateRow').style.display    = isInterval ? '' : 'none';
+  }
+}
+
+// keep legacy alias used by saveTask
 function updateDueModeUI() {
-  const isInterval = document.getElementById('taskDueMode').value === 'interval';
-  document.getElementById('intervalRow').style.display     = isInterval ? '' : 'none';
-  document.getElementById('scheduleModeRow').style.display = isInterval ? '' : 'none';
-  document.getElementById('startDateRow').style.display    = isInterval ? '' : 'none';
-  document.getElementById('fixedDateRow').style.display    = isInterval ? 'none' : '';
+  const isInterval = document.getElementById('dueBtnInterval').classList.contains('active');
+  setDueType(isInterval ? 'interval' : 'fixed');
 }
 
 function populateRoomSelect(sel) {
@@ -478,6 +509,15 @@ function populateAssigneeSelect(sel) {
     `<option value="alle" ${sel==='alle'?'selected':''}>All</option>`;
 }
 
+function _initIntervalChips() {
+  document.querySelectorAll('.interval-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.getElementById('taskInterval').value = chip.dataset.value;
+      updateIntervalUI();
+    });
+  });
+}
+
 function openAddModal() {
   editingTaskId=null;
   document.getElementById('modalTitle').textContent='New Task';
@@ -485,18 +525,22 @@ function openAddModal() {
   populateRoomSelect(currentGroup!=='alle'?currentGroup:'general');
   populateAssigneeSelect(currentView==='alle'?(users[0]?.id||'alle'):currentView);
   document.getElementById('taskPriority').value='normal';
-  document.getElementById('taskDueMode').value='interval';
   document.getElementById('taskInterval').value='weekly';
   document.getElementById('taskIntervalCustomDays').value='';
   document.getElementById('taskScheduleMode').value='strict';
-  updateIntervalUI();
   document.getElementById('taskStartDate').value='';
   document.getElementById('taskDueDate').value='';
   document.getElementById('taskDueTime').value='';
   document.getElementById('taskNotifyOffset').value='0';
   document.getElementById('notifHa').checked=true;
   document.getElementById('notifEmail').checked=false;
-  updateDueModeUI();
+  // reset progressive disclosure
+  document.getElementById('moreOptionsPanel').style.display='none';
+  document.getElementById('moreOptionsChevron').textContent='▾';
+  document.getElementById('moreOptionsLabel').textContent='More options';
+  setDueType('interval');
+  updateIntervalUI();
+  _initIntervalChips();
   document.getElementById('taskModal').classList.add('open');
   setTimeout(()=>document.getElementById('taskName').focus(), 300);
 }
@@ -511,24 +555,29 @@ function openEditModal(id) {
   document.getElementById('taskPriority').value=task.priority||'normal';
   document.getElementById('taskScheduleMode').value=task.scheduleMode||'strict';
   const hasCustom = task.intervalCustomDays != null;
-  document.getElementById('taskInterval').value = hasCustom ? 'custom' : (task.interval||'weekly');
+  const intervalVal = hasCustom ? 'custom' : (task.interval||'weekly');
+  document.getElementById('taskInterval').value = intervalVal;
   document.getElementById('taskIntervalCustomDays').value = hasCustom ? task.intervalCustomDays : '';
-  updateIntervalUI();
-  document.getElementById('taskDueMode').value=task.dueDate?'fixed':'interval';
   document.getElementById('taskStartDate').value=task.startDate||'';
   document.getElementById('taskDueDate').value=task.dueDate||'';
   document.getElementById('taskDueTime').value=task.dueTime||'';
   document.getElementById('taskNotifyOffset').value=String(task.notifyOffset||0);
   document.getElementById('notifHa').checked=task.notifications.ha||false;
   document.getElementById('notifEmail').checked=task.notifications.email||false;
-  updateDueModeUI();
+  // show advanced panel when editing (user expects all fields)
+  document.getElementById('moreOptionsPanel').style.display='';
+  document.getElementById('moreOptionsChevron').textContent='▴';
+  document.getElementById('moreOptionsLabel').textContent='Fewer options';
+  setDueType(task.dueDate ? 'fixed' : 'interval');
+  updateIntervalUI();
+  _initIntervalChips();
   document.getElementById('taskModal').classList.add('open');
 }
 
 function closeTaskModal() { document.getElementById('taskModal').classList.remove('open'); }
 
 async function saveTask() {
-  const mode = document.getElementById('taskDueMode').value;
+  const mode = document.getElementById('dueBtnFixed').classList.contains('active') ? 'fixed' : 'interval';
   const body = {
     name:               document.getElementById('taskName').value.trim(),
     room:               document.getElementById('taskRoom').value,

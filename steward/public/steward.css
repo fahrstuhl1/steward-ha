@@ -236,3 +236,17 @@ main { max-width: 640px; margin: 0 auto; padding: 16px 14px 60px; }
 .recent-task { font-size:0.84rem; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .recent-date { font-size:0.7rem; color:var(--text3); }
 .points-badge { font-size:0.62rem; font-weight:700; padding:1px 5px; border-radius:10px; background:rgba(255,255,255,0.1); margin-left:3px; }
+
+/* Progressive disclosure — task modal */
+.due-type-toggle { display:flex; gap:6px; }
+.due-type-btn { flex:1; padding:8px 10px; border-radius:var(--r-sm); border:1px solid var(--border2); background:transparent; color:var(--text3); font-size:0.82rem; font-weight:600; cursor:pointer; transition:all 0.15s; }
+.due-type-btn.active { background:var(--surface2); border-color:#5b9cf6; color:var(--text); }
+.due-type-btn:active { transform:scale(0.96); }
+
+.interval-chips { display:flex; gap:5px; flex-wrap:wrap; }
+.interval-chip { padding:5px 11px; border-radius:20px; border:1px solid var(--border); background:transparent; color:var(--text3); font-size:0.75rem; font-weight:500; cursor:pointer; transition:all 0.12s; white-space:nowrap; }
+.interval-chip.active { background:var(--surface2); border-color:#5b9cf6; color:var(--text); }
+.interval-chip:active { transform:scale(0.94); }
+
+.more-options-btn { width:100%; margin:10px 0 2px; padding:7px; background:none; border:none; color:var(--text3); font-size:0.78rem; cursor:pointer; text-align:center; transition:color 0.1s; }
+.more-options-btn:hover { color:var(--text2); }

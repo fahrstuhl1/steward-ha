@@ -82,77 +82,95 @@
   <div class="modal">
     <div class="modal-handle"></div>
     <h2 id="modalTitle">New Task</h2>
+
+    <!-- Core fields (always visible) -->
     <div class="form-group"><label>Name</label><input type="text" id="taskName" placeholder="e.g. Change bed linen" /></div>
-    <div class="form-group"><label>Room</label><select id="taskRoom"></select></div>
-    <div class="form-group"><label>Assigned to</label><select id="taskAssignee"></select></div>
-    <div class="form-group">
-      <label>Priority</label>
-      <select id="taskPriority">
-        <option value="high">🔴 High</option>
-        <option value="normal" selected>⚪ Normal</option>
-        <option value="low">🔵 Low</option>
-      </select>
+    <div class="form-row">
+      <div class="form-group"><label>Room</label><select id="taskRoom"></select></div>
+      <div class="form-group"><label>Assigned to</label><select id="taskAssignee"></select></div>
     </div>
+
+    <!-- Due type toggle -->
     <div class="form-group">
-      <label>Due type</label>
-      <select id="taskDueMode" onchange="updateDueModeUI()">
-        <option value="interval">Interval (recurring)</option>
-        <option value="fixed">Fixed date (once)</option>
-      </select>
+      <label>Type</label>
+      <div class="due-type-toggle">
+        <button type="button" class="due-type-btn active" id="dueBtnInterval" onclick="setDueType('interval')">🔁 Recurring</button>
+        <button type="button" class="due-type-btn" id="dueBtnFixed" onclick="setDueType('fixed')">📅 One-time</button>
+      </div>
     </div>
+
     <div id="intervalRow" class="form-group">
       <label>Interval</label>
-      <select id="taskInterval" onchange="updateIntervalUI()">
-        <option value="daily">Daily</option>
-        <option value="weekly">Weekly</option>
-        <option value="biweekly">Every 2 weeks</option>
-        <option value="monthly">Monthly</option>
-        <option value="quarterly">Quarterly</option>
-        <option value="custom">Custom…</option>
-      </select>
+      <div class="interval-chips" id="intervalChips">
+        <button type="button" class="interval-chip" data-value="daily">Daily</button>
+        <button type="button" class="interval-chip active" data-value="weekly">Weekly</button>
+        <button type="button" class="interval-chip" data-value="biweekly">2 weeks</button>
+        <button type="button" class="interval-chip" data-value="monthly">Monthly</button>
+        <button type="button" class="interval-chip" data-value="quarterly">Quarterly</button>
+        <button type="button" class="interval-chip" data-value="custom">Custom…</button>
+      </div>
+      <input type="hidden" id="taskInterval" value="weekly" />
     </div>
     <div id="customIntervalRow" class="form-group" style="display:none">
       <label>Custom interval (days)</label>
       <input type="number" id="taskIntervalCustomDays" min="1" max="365" placeholder="e.g. 10" />
     </div>
-    <div id="scheduleModeRow" class="form-group">
-      <label>Schedule mode</label>
-      <select id="taskScheduleMode">
-        <option value="strict">Strict — next due date stays on track</option>
-        <option value="flexible">Flexible — interval starts from completion</option>
-      </select>
-    </div>
-    <div id="startDateRow" class="form-group">
-      <label>Start date <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text3)">(first due date, optional)</span></label>
-      <input type="date" id="taskStartDate" />
-    </div>
     <div id="fixedDateRow" class="form-group" style="display:none">
       <label>Date</label>
       <input type="date" id="taskDueDate" />
     </div>
-    <div class="form-group">
-      <label>Time <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text3)">(optional)</span></label>
-      <input type="time" id="taskDueTime" />
-    </div>
-    <div class="form-group">
-      <label>Notify</label>
-      <select id="taskNotifyOffset">
-        <option value="0">At due time</option>
-        <option value="5">5 minutes before</option>
-        <option value="15">15 minutes before</option>
-        <option value="30">30 minutes before</option>
-        <option value="60">1 hour before</option>
-        <option value="120">2 hours before</option>
-        <option value="1440">1 day before</option>
-      </select>
-    </div>
-    <div class="form-group">
-      <label>Notification channel</label>
-      <div class="toggle-stack">
-        <label class="toggle-row"><input type="checkbox" id="notifHa" /><span class="toggle-track"></span><div class="toggle-text"><div class="toggle-label">Home Assistant</div><div class="toggle-desc">Push via HA Companion App</div></div></label>
-        <label class="toggle-row"><input type="checkbox" id="notifEmail" /><span class="toggle-track"></span><div class="toggle-text"><div class="toggle-label">Email</div><div class="toggle-desc">Reminder via email</div></div></label>
+
+    <!-- More options toggle -->
+    <button type="button" class="more-options-btn" id="moreOptionsBtn" onclick="toggleMoreOptions()">
+      <span id="moreOptionsLabel">More options</span> <span id="moreOptionsChevron">▾</span>
+    </button>
+
+    <!-- Advanced fields (hidden by default) -->
+    <div id="moreOptionsPanel" style="display:none">
+      <div class="form-group">
+        <label>Priority</label>
+        <select id="taskPriority">
+          <option value="high">🔴 High</option>
+          <option value="normal" selected>⚪ Normal</option>
+          <option value="low">🔵 Low</option>
+        </select>
+      </div>
+      <div id="scheduleModeRow" class="form-group">
+        <label>Schedule mode</label>
+        <select id="taskScheduleMode">
+          <option value="strict">Strict — next due date stays on track</option>
+          <option value="flexible">Flexible — interval starts from completion</option>
+        </select>
+      </div>
+      <div id="startDateRow" class="form-group">
+        <label>Start date <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text3)">(first due date, optional)</span></label>
+        <input type="date" id="taskStartDate" />
+      </div>
+      <div class="form-group">
+        <label>Time <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text3)">(optional)</span></label>
+        <input type="time" id="taskDueTime" />
+      </div>
+      <div class="form-group">
+        <label>Notify</label>
+        <select id="taskNotifyOffset">
+          <option value="0">At due time</option>
+          <option value="5">5 minutes before</option>
+          <option value="15">15 minutes before</option>
+          <option value="30">30 minutes before</option>
+          <option value="60">1 hour before</option>
+          <option value="120">2 hours before</option>
+          <option value="1440">1 day before</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Notification channel</label>
+        <div class="toggle-stack">
+          <label class="toggle-row"><input type="checkbox" id="notifHa" /><span class="toggle-track"></span><div class="toggle-text"><div class="toggle-label">Home Assistant</div><div class="toggle-desc">Push via HA Companion App</div></div></label>
+          <label class="toggle-row"><input type="checkbox" id="notifEmail" /><span class="toggle-track"></span><div class="toggle-text"><div class="toggle-label">Email</div><div class="toggle-desc">Reminder via email</div></div></label>
+        </div>
       </div>
     </div>
+
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="closeTaskModal()">Cancel</button>
       <button class="btn btn-primary"   onclick="saveTask()">Save</button>
