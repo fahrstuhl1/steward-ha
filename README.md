@@ -138,4 +138,4 @@ The app is accessible via the **Steward** sidebar entry in Home Assistant (Ingre
 
 ## Changelog
 
-See [CHANGELOG.md](CHANGELOG.md)
+See [CHANGELOG.md](steward/CHANGELOG.md)
