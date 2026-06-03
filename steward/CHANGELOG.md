@@ -7,7 +7,6 @@
 - Interval dropdown replaced with horizontal chip selection
 - Priority, schedule mode, time and notifications moved behind "More options" toggle
 - Edit modal opens with all fields expanded automatically
-- 
 ---
 
 ## 1.0.1
