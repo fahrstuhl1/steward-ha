@@ -389,7 +389,10 @@ cron.schedule('*/15 * * * *', async () => {
     const cycleStart      = task.lastCompleted ? new Date(task.lastCompleted).getTime() : 0;
     const alreadyNotified = task.lastNotified && new Date(task.lastNotified).getTime() > cycleStart;
 
-    if (!alreadyNotified && getNotifyAt(task) <= now) {
+    const notifyAt = getNotifyAt(task);
+    const delayUntilNotify = notifyAt - now;
+
+    if (!alreadyNotified && delayUntilNotify <= 0 && delayUntilNotify > -10 * 60000) {
       const allUsers = data.settings.users || [];
       const targets  = task.assignee === 'alle' ? allUsers.map(u => u.id) : [task.assignee];
       const timeStr  = task.dueTime ? ` at ${task.dueTime}` : '';
