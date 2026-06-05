@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.13.0
+### Features
+- **Language support (EN/DE)**: Added full English/German translation system (`i18n.js`)
+- Language toggle accessible via the 🌐 button in the hamburger menu; choice persists in localStorage
+- Browser language auto-detected on first load (German browser → DE, everything else → EN)
+- All UI strings translated: task cards, modals, settings, stats, achievements, intervals, confirmations
+- Backend added `nextDueSerialized()` — structured due-date data for locale-aware date display in frontend
+
+---
+
 ## 1.12.0
 ### Features
 - **Timezone support**: Automatically fetch timezone from Home Assistant or manually configure

@@ -78,4 +78,24 @@ function nextDueDate(task) {
   return `In ${diff} days${timeStr}`;
 }
 
-module.exports = { INTERVAL_DAYS, INTERVAL_LABELS, getIntervalMs, getScheduledDueAt, getDueAt, getNotifyAt, isDue, isSoon, nextDueDate };
+function nextDueSerialized(task) {
+  const dueAt = getDueAt(task);
+  const now   = Date.now();
+  const time  = task.dueTime || null;
+  if (task.dueDate) {
+    if (task.lastCompleted && new Date(task.lastCompleted).getTime() >= dueAt)
+      return { key: 'due.done' };
+    const diff = Math.ceil((dueAt - now) / 86400000);
+    if (diff <= 0)  return { key: 'due.now',      time };
+    if (diff === 1) return { key: 'due.tomorrow',  time };
+    return { key: 'due.date', date: new Date(dueAt).toLocaleDateString('en-GB'), time };
+  }
+  if (now >= dueAt)           return { key: 'due.now',     time };
+  const msLeft = dueAt - now;
+  if (msLeft <= 12 * 3600000) return { key: 'due.today',   time };
+  const diff = Math.ceil(msLeft / 86400000);
+  if (diff === 1)             return { key: 'due.tomorrow', time };
+  return { key: 'due.in_days', days: diff, time };
+}
+
+module.exports = { INTERVAL_DAYS, INTERVAL_LABELS, getIntervalMs, getScheduledDueAt, getDueAt, getNotifyAt, isDue, isSoon, nextDueDate, nextDueSerialized };

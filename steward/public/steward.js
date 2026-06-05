@@ -18,7 +18,7 @@ function applyTheme(theme) {
   currentTheme = theme;
   document.body.classList.toggle('light', theme === 'light');
   const label = document.getElementById('themeMenuLabel');
-  if (label) label.textContent = theme === 'light' ? 'Dark mode' : 'Light mode';
+  if (label) label.textContent = theme === 'light' ? L('theme.to_dark') : L('theme.to_light');
   const icon = document.querySelector('#themeMenuItem .menu-item-icon');
   if (icon) icon.textContent = theme === 'light' ? '🌙' : '☀️';
 }
@@ -31,7 +31,7 @@ async function toggleTheme() {
 let undoTimeout = null, lastCompletedId = null;
 function showUndoToast(taskName) {
   if (undoTimeout) clearTimeout(undoTimeout);
-  document.getElementById('undoText').textContent = `"${taskName}" completed`;
+  document.getElementById('undoText').textContent = L('undo.completed', {name: taskName});
   document.getElementById('undoToast').classList.add('show');
   undoTimeout = setTimeout(hideUndoToast, 5000);
 }
@@ -83,21 +83,41 @@ function initPullToRefresh() {
     const dy = e.touches[0].clientY - pullStartY;
     if (dy > 10) {
       document.getElementById('pullIndicator').style.opacity = Math.min(1, (dy - 10) / 80);
-      if (dy > 90 && !pullTriggered) { pullTriggered = true; document.getElementById('pullIndicator').textContent = '↑ Refreshing…'; }
+      if (dy > 90 && !pullTriggered) { pullTriggered = true; document.getElementById('pullIndicator').textContent = L('pull.refreshing'); }
     }
   }, {passive:true});
   document.addEventListener('touchend', async e => {
     if (!pulling) return;
     const dy = e.changedTouches[0].clientY - pullStartY;
     const indicator = document.getElementById('pullIndicator');
-    indicator.style.opacity = 0; indicator.textContent = '↓ Release to refresh';
+    indicator.style.opacity = 0; indicator.textContent = L('pull.release');
     pulling = false;
     if (dy > 90) await loadTasks();
   }, {passive:true});
 }
 
-const INTERVAL_LABELS = { daily:'Daily', weekly:'Weekly', biweekly:'Every 2 weeks', monthly:'Monthly', quarterly:'Quarterly' };
-const USER_COLORS     = ['#5b9cf6','#f472b6','#a78bfa','#34d399','#fb923c','#f87171','#60a5fa','#e879f9'];
+const USER_COLORS = ['#5b9cf6','#f472b6','#a78bfa','#34d399','#fb923c','#f87171','#60a5fa','#e879f9'];
+
+function formatNextDue(d) {
+  if (!d) return '';
+  let str;
+  if (d.key === 'due.date') str = d.date;
+  else if (d.key === 'due.in_days') str = L('due.in_days', {days: d.days});
+  else str = L(d.key);
+  if (d.time) str += ' ' + L('due.at') + ' ' + d.time;
+  return str;
+}
+
+function cycleLang() {
+  const next = document.documentElement.lang === 'de' ? 'en' : 'de';
+  setLang(next);
+  localStorage.setItem('steward-lang', next);
+  document.getElementById('langLabel').textContent = next === 'de' ? 'Deutsch' : 'English';
+  applyTranslations();
+  render();
+  applyTheme(currentTheme);
+}
+
 const DEFAULT_ROOMS   = [
   {id:'kitchen',name:'Kitchen',icon:'🍳'},{id:'living_room',name:'Living Room',icon:'🛋️'},
   {id:'bathroom',name:'Bathroom',icon:'🚿'},{id:'bedroom',name:'Bedroom',icon:'🛏️'},
@@ -105,6 +125,10 @@ const DEFAULT_ROOMS   = [
 ];
 
 async function init() {
+  const savedLang = localStorage.getItem('steward-lang') || browserLang();
+  setLang(savedLang);
+  document.getElementById('langLabel').textContent = savedLang === 'de' ? 'Deutsch' : 'English';
+  applyTranslations();
   await loadSettings();
   await loadTasks();
   await loadStats();
@@ -139,8 +163,9 @@ async function loadSettings() {
 function calNav(dir) { calMonth += dir; if(calMonth>11){calMonth=0;calYear++;} if(calMonth<0){calMonth=11;calYear--;} calSelectedDay=null; renderCalendar(); }
 
 function renderCalendar() {
-  const DAYS   = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const DAYS   = L('cal.days');
+  const locale = document.documentElement.lang === 'de' ? 'de-DE' : 'en-GB';
+  const MONTHS = Array.from({length:12}, (_,i) => new Date(2000, i, 1).toLocaleDateString(locale, {month:'long'}));
   document.getElementById('calMonthLabel').textContent = `${MONTHS[calMonth]} ${calYear}`;
   const byDay = {};
   tasks.forEach(t => {
@@ -181,9 +206,9 @@ function renderAchievements(userStats) {
     ? userStats.find(s=>s.userId===currentView)
     : [...userStats].sort((a,b)=>b.pointsTotal-a.pointsTotal)[0];
   if (!target) { sec.style.display='none'; return; }
-  document.getElementById('achievementsLabel').textContent = `Achievements — ${target.name}`;
+  document.getElementById('achievementsLabel').textContent = L('stats.achievements', {name: target.name});
   document.getElementById('achievementGrid').innerHTML = (target.achievements||[]).map(a=>
-    `<div class="achievement-card ${a.unlocked?'':'locked'}" title="${a.desc}"><div class="achievement-icon">${a.icon}</div><div class="achievement-title">${a.title}</div><div class="achievement-desc">${a.desc}</div></div>`
+    `<div class="achievement-card ${a.unlocked?'':'locked'}" title="${L('ach.'+a.id+'.desc')}"><div class="achievement-icon">${a.icon}</div><div class="achievement-title">${L('ach.'+a.id+'.title')}</div><div class="achievement-desc">${L('ach.'+a.id+'.desc')}</div></div>`
   ).join('');
 }
 
@@ -205,11 +230,11 @@ function renderStatsView() {
       <div class="leader-rank">${RANKS[i]||'·'}</div>
       <div class="leader-info">
         <div class="leader-name" style="color:${s.color}">${s.name}</div>
-        <div class="leader-meta">${s.tasksDone} tasks completed total${s.streak > 1 ? ` <span class="leader-streak">· 🔥 ${s.streak}-day streak</span>` : ''}</div>
+        <div class="leader-meta">${L('stats.tasks_done', {n: s.tasksDone})}${s.streak > 1 ? ` <span class="leader-streak">· ${L('stats.streak', {n: s.streak})}</span>` : ''}</div>
       </div>
-      <div><div class="leader-points" style="color:${s.color}">${s[ptKey]}</div><div style="font-size:0.65rem;color:var(--text3);text-align:right;">points</div></div>
+      <div><div class="leader-points" style="color:${s.color}">${s[ptKey]}</div><div style="font-size:0.65rem;color:var(--text3);text-align:right;">${L('stats.points')}</div></div>
     </div>`
-  ).join('') || '<div class="empty-state">No points yet 🏠</div>';
+  ).join('') || `<div class="empty-state">${L('empty.no_stats')}</div>`;
   renderAchievements(stats);
   document.getElementById('recentList').innerHTML = recent.slice(0, 15).map(c => {
     const u = users.find(u => u.id === c.userId);
@@ -217,7 +242,7 @@ function renderStatsView() {
     const d = new Date(c.date);
     const dateStr = d.toLocaleDateString('en-GB', {day:'2-digit',month:'2-digit'}) + ' ' + d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
     return `<div class="recent-item"><div class="recent-pts" style="color:${color}">+${c.points}</div><div class="recent-info"><div class="recent-task">${c.taskName}</div><div class="recent-date">${c.userName} · ${dateStr}${c.comment?` · 💬 ${c.comment}`:''}</div></div></div>`;
-  }).join('') || '<div style="color:var(--text3);font-size:0.8rem;padding:8px 0;">No completions yet</div>';
+  }).join('') || `<div style="color:var(--text3);font-size:0.8rem;padding:8px 0;">${L('empty.no_completions')}</div>`;
 }
 
 function renderLogoSub() { document.getElementById('logoSub').textContent = users.length ? ' ' + users.map(u => u.name).join(' & ') : ''; }
@@ -230,7 +255,7 @@ function renderPersonTabs() {
     const badge = pts > 0 ? `<span class="points-badge">${pts}</span>` : '';
     return `<button class="tab ${currentView===u.id?'active':''}" style="${currentView===u.id?'background:'+u.color:''}" onclick="setView('${u.id}')">${u.name}${badge}</button>`;
   }).join('') +
-  (users.length > 1 ? `<button class="tab alle ${currentView==='alle'?'active':''}" onclick="setView('alle')">All</button>` : '') +
+  (users.length > 1 ? `<button class="tab alle ${currentView==='alle'?'active':''}" onclick="setView('alle')">${L('tab.all')}</button>` : '') +
   (gamificationEnabled ? `<button class="tab ${currentView==='stats'?'active':''}" style="${currentView==='stats'?'background:#a78bfa':''}" onclick="setView('stats')">🏆</button>` : '');
 }
 
@@ -257,7 +282,6 @@ function toggleSearch() {
   else { document.getElementById('searchInput').value=''; render(); }
 }
 
-const OVERLAY_LABELS = { planning: '📋 Planning', archive: '📦 Archive', calendar: '📅 Calendar' };
 
 function setOverlayView(which) {
   const views = { planning: planningOpen, archive: archiveOpen, calendar: calendarOpen };
@@ -278,7 +302,10 @@ function setOverlayView(which) {
   document.getElementById('groupTabs').style.display     = isOverlay || currentView==='stats' ? 'none' : '';
   const backBar = document.getElementById('viewBackBar');
   backBar.classList.toggle('visible', isOverlay);
-  if (activeKey) document.getElementById('viewBackLabel').textContent = OVERLAY_LABELS[activeKey];
+  if (activeKey) {
+    const overlayLabels = { planning: `📋 ${L('menu.planning')}`, archive: `📦 ${L('menu.archive')}`, calendar: `📅 ${L('menu.calendar')}` };
+    document.getElementById('viewBackLabel').textContent = overlayLabels[activeKey];
+  }
   if (planningOpen) renderPlanningView();
   if (archiveOpen)  renderArchiveView();
   if (calendarOpen) renderCalendar();
@@ -291,14 +318,14 @@ function toggleArchive()  { setOverlayView('archive'); }
 function renderPlanningView() {
   const now = Date.now(), end = now + planningDays * 86400000;
   const upcoming = tasks.filter(t => t.dueAtMs > now && t.dueAtMs <= end && t.interval !== 'daily').sort((a, b) => a.dueAtMs - b.dueAtMs);
-  if (!upcoming.length) { document.getElementById('planningView').innerHTML = `<div class="plan-empty">No tasks in the next ${planningDays} days 🎉</div>`; return; }
+  if (!upcoming.length) { document.getElementById('planningView').innerHTML = `<div class="plan-empty">${L('empty.no_planning', {days: planningDays})}</div>`; return; }
   const byDay = {};
   upcoming.forEach(t => {
     const key = new Date(t.dueAtMs).toLocaleDateString('en-GB', {weekday:'long', day:'2-digit', month:'2-digit'});
     if (!byDay[key]) byDay[key] = []; byDay[key].push(t);
   });
   document.getElementById('planningView').innerHTML =
-    `<div style="font-size:0.75rem;color:var(--text3);margin-bottom:12px;">Next ${planningDays} days</div>` +
+    `<div style="font-size:0.75rem;color:var(--text3);margin-bottom:12px;">${L('view.planning_title', {days: planningDays})}</div>` +
     Object.entries(byDay).map(([day, dayTasks]) => `
       <div class="plan-day">
         <div class="plan-day-header"><span>${day}</span><span class="plan-day-count">${dayTasks.length}</span></div>
@@ -307,12 +334,12 @@ function renderPlanningView() {
 }
 
 async function renderArchiveView() {
-  document.getElementById('archiveView').innerHTML = '<div class="plan-empty">Loading archive…</div>';
+  document.getElementById('archiveView').innerHTML = `<div class="plan-empty">${L('empty.archive_loading')}</div>`;
   const archive = await (await fetch('api/archive')).json();
-  if (!archive.length) { document.getElementById('archiveView').innerHTML = '<div class="plan-empty">Archive is empty 📦</div>'; return; }
+  if (!archive.length) { document.getElementById('archiveView').innerHTML = `<div class="plan-empty">${L('empty.archive_empty')}</div>`; return; }
   const PRIORITY_ICON = { high:'🔴', normal:'⚪', low:'🔵' };
   document.getElementById('archiveView').innerHTML =
-    `<div style="font-size:0.75rem;color:var(--text3);margin-bottom:12px;">${archive.length} archived tasks</div>` +
+    `<div style="font-size:0.75rem;color:var(--text3);margin-bottom:12px;">${L('archive.count', {n: archive.length})}</div>` +
     archive.map(e => {
       const u = users.find(u => u.id === e.completedBy);
       const date = new Date(e.archivedAt).toLocaleDateString('en-GB', {day:'2-digit',month:'2-digit',year:'numeric'});
@@ -323,7 +350,7 @@ async function renderArchiveView() {
 
 function toggleCalendar() { setOverlayView('calendar'); }
 function setGroup(g) { currentGroup=g; render(); }
-function toggleShowDone() { showDone=!showDone; document.getElementById('showDoneBtn').textContent=showDone?'Hide future tasks':'Show future tasks'; render(); }
+function toggleShowDone() { showDone=!showDone; document.getElementById('showDoneBtn').textContent=showDone?L('tasks.hide_future'):L('tasks.show_future'); render(); }
 function toggleRoom(id) { collapsedRooms.has(id)?collapsedRooms.delete(id):collapsedRooms.add(id); const el=document.getElementById('sec-'+id); if(el)el.classList.toggle('collapsed',collapsedRooms.has(id)); }
 
 function filteredTasks() {
@@ -340,11 +367,11 @@ function renderHeader() {
   const ft=filteredTasks(), due=ft.filter(t=>t.isDue||t.isSoon).length, done=ft.filter(t=>!t.isDue&&!t.isSoon&&t.lastCompleted).length;
   const bd=document.getElementById('hstatDue'), bk=document.getElementById('hstatDone');
   bd.style.display=due?'inline':'none'; bk.style.display=done?'inline':'none';
-  bd.textContent=due+' due'; bk.textContent=done+' done';
+  bd.textContent=L('header.due_count', {n: due}); bk.textContent=L('header.done_count', {n: done});
 }
 
 function renderGroupTabs() {
-  const tabs = [{id:'alle',name:'All',icon:''}];
+  const tabs = [{id:'alle',name:L('tab.all'),icon:''}];
   rooms.forEach(r => { if(tasks.some(t=>(t.room||'general')===r.id)) tabs.push(r); });
   document.getElementById('groupTabs').innerHTML = tabs.map(t =>
     `<button class="group-tab ${currentGroup===t.id?'active':''}" onclick="setGroup('${t.id}')">${t.icon?t.icon+' ':''}${t.name}</button>`
@@ -368,13 +395,13 @@ function renderTasks() {
     html+=`<div class="section ${collapsed?'collapsed':''}" id="sec-${r.id}">
       <div class="section-header" onclick="toggleRoom('${r.id}')">
         <span class="section-icon">${r.icon}</span><span class="section-title">${r.name}</span>
-        ${due.length?`<span class="section-due-count">${due.length} due</span>`:''}
+        ${due.length?`<span class="section-due-count">${L('section.due_count', {n: due.length})}</span>`:''}
         <span class="section-chevron">▾</span>
       </div>
       <div class="section-body"><div class="task-list">${visible.map(taskCard).join('')}</div></div>
     </div>`;
   });
-  document.getElementById('taskContainer').innerHTML = html || '<div class="empty-state">All tasks done ✓</div>';
+  document.getElementById('taskContainer').innerHTML = html || `<div class="empty-state">${L('empty.all_done')}</div>`;
 }
 
 function getUserById(id) { return users.find(u => u.id === id); }
@@ -384,26 +411,27 @@ function taskCard(t) {
   const isSoonFlag = !isNow && t.isSoon;
   const isWaiting  = !isNow && !isSoonFlag && t.lastCompleted && !t.dueDate;
   const isDone     = !isNow && !isSoonFlag && !isWaiting;
-  const isTomorrow = isDone && t.nextDue.startsWith('Tomorrow');
+  const isTomorrow = isDone && t.nextDueData?.key === 'due.tomorrow';
   const cardClass  = isNow ? 'due-now' : isSoonFlag ? 'due-soon' : isTomorrow ? 'due-today' : isWaiting ? 'waiting' : 'done';
   const dueClass   = isNow ? 'red' : isSoonFlag ? 'yellow' : isTomorrow ? 'orange' : 'muted';
 
   let badgeHtml;
   if (t.assignee === 'alle') {
-    badgeHtml = `<span class="badge" style="background:rgba(167,139,250,0.15);color:#a78bfa">All</span>`;
+    badgeHtml = `<span class="badge" style="background:rgba(167,139,250,0.15);color:#a78bfa">${L('tab.all')}</span>`;
   } else {
     const u = getUserById(t.assignee);
     badgeHtml = `<span class="badge" style="background:${(u?.color||'#7c819a')}22;color:${u?.color||'#7c819a'}">${u ? u.name : t.assignee}</span>`;
   }
 
-  const intervalLabel = t.dueDate ? '📅 Once' : (t.intervalCustomDays ? `Every ${t.intervalCustomDays}d` : (INTERVAL_LABELS[t.interval] || t.interval));
-  const notifyHint    = t.notifyOffset > 0 ? ` <span class="meta-text">(${t.notifyOffset<60?t.notifyOffset+'min':Math.round(t.notifyOffset/60)+'h'} before)</span>` : '';
+  const intervalLabel = t.dueDate ? L('interval.once') : (t.intervalCustomDays ? L('interval.custom', {days: t.intervalCustomDays}) : (L('interval.' + t.interval) || t.interval));
+  const notifyHint    = t.notifyOffset > 0 ? ` <span class="meta-text">${t.notifyOffset < 60 ? L('notify.hint_min', {n: t.notifyOffset}) : L('notify.hint_hour', {n: Math.round(t.notifyOffset/60)})}</span>` : '';
   const priorityDot   = t.priority && t.priority !== 'normal' ? `<span class="priority-dot priority-${t.priority}"></span>` : '';
-  const snoozeHint    = t.snoozedUntil && new Date(t.snoozedUntil) > new Date() ? `<div class="snooze-hint">⏰ Snoozed until ${new Date(t.snoozedUntil).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</div>` : '';
+  const snoozeHint    = t.snoozedUntil && new Date(t.snoozedUntil) > new Date() ? `<div class="snooze-hint">${L('snooze.hint', {time: new Date(t.snoozedUntil).toLocaleTimeString(document.documentElement.lang === 'de' ? 'de-DE' : 'en-GB', {hour:'2-digit',minute:'2-digit'})})}</div>` : '';
   const commentLine   = t.lastComment ? `<div class="comment-text">💬 ${t.lastComment}</div>` : '';
   const snoozeBtn     = (isNow || isSoonFlag) ? `<button class="task-action-btn" onclick="snoozeTask('${t.id}')" title="Snooze">⏰</button>` : '';
   const checkIcon     = isWaiting ? '⏳' : '✓';
-  const waitingLabel  = isWaiting ? `<span class="due-label muted">⏳ Waiting · ${t.nextDue}</span>` : `<span class="due-label ${dueClass}">${t.nextDue}</span>`;
+  const nextDueStr    = formatNextDue(t.nextDueData) || t.nextDue;
+  const waitingLabel  = isWaiting ? `<span class="due-label muted">⏳ ${L('state.waiting')} · ${nextDueStr}</span>` : `<span class="due-label ${dueClass}">${nextDueStr}</span>`;
 
   return `<div class="task-card ${cardClass}" data-id="${t.id}">
     <button class="check-btn" onclick="toggleComplete('${t.id}')">${checkIcon}</button>
@@ -453,7 +481,7 @@ async function snoozeTask(id) {
 }
 
 async function deleteTask(id) {
-  if(!confirm('Delete task?')) return;
+  if(!confirm(L('confirm.delete_task'))) return;
   await fetch(`api/tasks/${id}`, {method:'DELETE'});
   await loadTasks();
 }
@@ -485,7 +513,7 @@ function toggleMoreOptions() {
   const open    = panel.style.display === 'none';
   panel.style.display = open ? '' : 'none';
   chevron.textContent = open ? '▴' : '▾';
-  label.textContent   = open ? 'Fewer options' : 'More options';
+  label.textContent   = open ? L('more_options.hide') : L('more_options.show');
   if (open) {
     const isInterval = document.getElementById('dueBtnInterval').classList.contains('active');
     document.getElementById('scheduleModeRow').style.display = isInterval ? '' : 'none';
@@ -506,7 +534,7 @@ function populateRoomSelect(sel) {
 function populateAssigneeSelect(sel) {
   document.getElementById('taskAssignee').innerHTML =
     users.map(u => `<option value="${u.id}" ${u.id===sel?'selected':''}>${u.name}</option>`).join('') +
-    `<option value="alle" ${sel==='alle'?'selected':''}>All</option>`;
+    `<option value="alle" ${sel==='alle'?'selected':''}>${L('tab.all')}</option>`;
 }
 
 function _initIntervalChips() {
@@ -520,7 +548,7 @@ function _initIntervalChips() {
 
 function openAddModal() {
   editingTaskId=null;
-  document.getElementById('modalTitle').textContent='New Task';
+  document.getElementById('modalTitle').textContent=L('modal.new_task');
   document.getElementById('taskName').value='';
   populateRoomSelect(currentGroup!=='alle'?currentGroup:'general');
   populateAssigneeSelect(currentView==='alle'?(users[0]?.id||'alle'):currentView);
@@ -537,7 +565,7 @@ function openAddModal() {
   // reset progressive disclosure
   document.getElementById('moreOptionsPanel').style.display='none';
   document.getElementById('moreOptionsChevron').textContent='▾';
-  document.getElementById('moreOptionsLabel').textContent='More options';
+  document.getElementById('moreOptionsLabel').textContent=L('more_options.show');
   setDueType('interval');
   updateIntervalUI();
   _initIntervalChips();
@@ -548,7 +576,7 @@ function openAddModal() {
 function openEditModal(id) {
   const task=tasks.find(t=>t.id===id); if(!task) return;
   editingTaskId=id;
-  document.getElementById('modalTitle').textContent='Edit Task';
+  document.getElementById('modalTitle').textContent=L('modal.edit_task');
   document.getElementById('taskName').value=task.name;
   populateRoomSelect(task.room||'general');
   populateAssigneeSelect(task.assignee);
@@ -567,7 +595,7 @@ function openEditModal(id) {
   // show advanced panel when editing (user expects all fields)
   document.getElementById('moreOptionsPanel').style.display='';
   document.getElementById('moreOptionsChevron').textContent='▴';
-  document.getElementById('moreOptionsLabel').textContent='Fewer options';
+  document.getElementById('moreOptionsLabel').textContent=L('more_options.hide');
   setDueType(task.dueDate ? 'fixed' : 'interval');
   updateIntervalUI();
   _initIntervalChips();
@@ -592,7 +620,7 @@ async function saveTask() {
     notifyOffset:       Number(document.getElementById('taskNotifyOffset').value)||0,
     notifications: { ha: document.getElementById('notifHa').checked, email: document.getElementById('notifEmail').checked }
   };
-  if(!body.name) { alert('Please enter a name.'); return; }
+  if(!body.name) { alert(L('alert.no_name')); return; }
   await fetch(editingTaskId ? `api/tasks/${editingTaskId}` : 'api/tasks', { method: editingTaskId?'PUT':'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
   closeTaskModal();
   await loadTasks();
@@ -759,15 +787,15 @@ async function handleImport(input) {
   const file = input.files[0]; input.value = '';
   if (!file) return;
   let data;
-  try { data = JSON.parse(await file.text()); } catch(e) { alert('Invalid JSON file.'); return; }
-  if (!confirm(`Import this backup?\n\n${data.tasks?.length ?? '?'} tasks found.\n\nThis will replace ALL current data.`)) return;
+  try { data = JSON.parse(await file.text()); } catch(e) { alert(L('alert.invalid_json')); return; }
+  if (!confirm(L('confirm.import', {n: data.tasks?.length ?? '?'}))) return;
   let res, result;
   try {
     res    = await fetch('api/import', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) });
     result = await res.json();
-  } catch(e) { alert('Import failed: ' + e.message + (res ? ' (HTTP ' + res.status + ')' : '')); return; }
+  } catch(e) { alert(L('alert.import_failed', {error: e.message + (res ? ' (HTTP ' + res.status + ')' : '')})); return; }
   if (result.success) {
-    alert(`Import successful — ${result.tasks} tasks and ${result.completions} completions restored.`);
+    alert(L('alert.import_success', {tasks: result.tasks, completions: result.completions}));
     closeSettings(); await loadSettings(); await loadTasks(); await loadStats();
   } else { alert('Import failed: ' + result.error); }
 }

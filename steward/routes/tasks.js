@@ -3,7 +3,7 @@ const { v4: uuidv4 } = require('uuid');
 const router  = express.Router();
 
 const { readData, writeData } = require('../lib/data');
-const { INTERVAL_LABELS, getScheduledDueAt, getIntervalMs, getDueAt, isDue, isSoon, nextDueDate } = require('../lib/time');
+const { INTERVAL_LABELS, getScheduledDueAt, getIntervalMs, getDueAt, isDue, isSoon, nextDueDate, nextDueSerialized } = require('../lib/time');
 const { pendingTimers, scheduleNotification, fireNotification } = require('../lib/notifications');
 const { updateHaSensors } = require('../lib/ha');
 
@@ -14,6 +14,7 @@ router.get('/', (req, res) => {
   res.json(data.tasks.map(t => ({
     ...t,
     isDue: isDue(t), isSoon: isSoon(t), nextDue: nextDueDate(t),
+    nextDueData: nextDueSerialized(t),
     dueAtMs: getDueAt(t),
     intervalLabel: INTERVAL_LABELS[t.interval]
   })));
