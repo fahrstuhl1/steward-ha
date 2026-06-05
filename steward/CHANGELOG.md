@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.13.0
+## 1.3.0
 ### Features
 - **Language support (EN/DE)**: Added full English/German translation system (`i18n.js`)
 - Language toggle accessible via the 🌐 button in the hamburger menu; choice persists in localStorage
@@ -10,7 +10,7 @@
 
 ---
 
-## 1.12.0
+## 1.2.0
 ### Features
 - **Timezone support**: Automatically fetch timezone from Home Assistant or manually configure
 - Notifications and task schedules now respect user's timezone (fixes off-by-one issues in UTC± regions)
@@ -22,7 +22,7 @@
 
 ---
 
-## 1.0.2
+## 1.1.0
 ### Improvements
 - Task modal: progressive disclosure — only name, room, assignee, type and interval visible by default
 - Due type selector replaced with two-button toggle (🔁 Recurring / 📅 One-time)
