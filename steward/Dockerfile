@@ -6,6 +6,9 @@ COPY package.json .
 RUN npm install --omit=dev
 
 COPY server.js .
+COPY cron.js .
+COPY lib/ lib/
+COPY routes/ routes/
 COPY public/ public/
 COPY data.default.json .
 COPY run.sh /run.sh

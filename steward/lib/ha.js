@@ -1,0 +1,219 @@
+const https = require('https');
+const http  = require('http');
+const { v4: uuidv4 } = require('uuid');
+const { readData, writeData } = require('./data');
+const { getScheduledDueAt, getIntervalMs, isDue } = require('./time');
+const { sendHaNotify, sendEmail, scheduleNotification } = require('./notifications');
+
+function request(haUrl, haToken, options, body = null) {
+  const url = new URL(options.path, haUrl);
+  const lib = url.protocol === 'https:' ? https : http;
+  return new Promise(resolve => {
+    const req = lib.request({
+      hostname: url.hostname,
+      port: url.port || (url.protocol === 'https:' ? 443 : 80),
+      path: url.pathname + (url.search || ''),
+      method: options.method || 'GET',
+      headers: { 'Authorization': `Bearer ${haToken}`, ...options.headers },
+      rejectUnauthorized: false,
+      timeout: options.timeout || undefined
+    }, res => {
+      let data = '';
+      res.on('data', c => data += c);
+      res.on('end', () => resolve({ statusCode: res.statusCode, body: data, res }));
+    });
+    req.on('timeout', () => { req.destroy(); resolve(null); });
+    req.on('error',   () => resolve(null));
+    if (body) req.write(body);
+    req.end();
+  });
+}
+
+async function setHaState(data, entityId, state, attributes) {
+  const { haUrl, haToken } = data.settings;
+  if (!haUrl || !haToken) return;
+  const payload = JSON.stringify({ state: String(state), attributes });
+  await request(haUrl, haToken, {
+    path: `/api/states/${entityId}`, method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(payload) }
+  }, payload);
+}
+
+async function updateHaSensors() {
+  const data  = readData();
+  const tasks = data.tasks;
+  const users = data.settings.users || [];
+  await setHaState(data, 'sensor.steward_due',      tasks.filter(t => isDue(t)).length,  { friendly_name: 'Steward Due',     icon: 'mdi:clipboard-list' });
+  await setHaState(data, 'sensor.steward_due_soon', tasks.filter(t => !isDue(t) && (require('./time').getDueAt(t) - Date.now()) <= 12 * 3600000).length, { friendly_name: 'Steward Due Soon', icon: 'mdi:clock-alert-outline' });
+  for (const user of users) {
+    const ut = tasks.filter(t => t.assignee === user.id || t.assignee === 'alle');
+    await setHaState(data, `sensor.steward_${user.id}_due`, ut.filter(t => isDue(t)).length, {
+      friendly_name: `Steward ${user.name} Due`, icon: 'mdi:account-check'
+    });
+  }
+}
+
+async function fetchHaStates(data, timeoutMs = 10000) {
+  const { haUrl, haToken } = data.settings;
+  if (!haUrl || !haToken) return null;
+  const result = await request(haUrl, haToken, { path: '/api/states', timeout: timeoutMs });
+  if (!result) return null;
+  try { return JSON.parse(result.body); } catch(e) { return null; }
+}
+
+async function checkHaTriggers() {
+  const data     = readData();
+  const triggers = data.settings.haTriggers || [];
+  if (!triggers.length) return;
+
+  const states = await fetchHaStates(data);
+  if (!states) return;
+
+  const stateMap = {};
+  states.forEach(s => stateMap[s.entity_id] = s);
+
+  let changed = false;
+  for (const trigger of triggers) {
+    if (!trigger.entityId || !trigger.toState || !trigger.enabled) continue;
+    const entity  = stateMap[trigger.entityId];
+    if (!entity) continue;
+    const current = entity.state;
+
+    if (current === trigger.toState && trigger.lastState !== trigger.toState) {
+      const task = {
+        id: uuidv4(),
+        name:               trigger.taskName || entity.attributes.friendly_name || trigger.entityId,
+        assignee:           trigger.assignee || 'alle',
+        room:               trigger.room     || 'general',
+        interval:           'once', intervalCustomDays: null, scheduleMode: 'strict', priority: 'normal',
+        createdAt:          new Date().toISOString(),
+        startDate: null, dueDate: null, nextDueAt: null,
+        dueTime:            trigger.dueTime  || null,
+        notifyOffset:       trigger.notifyOffset != null ? Number(trigger.notifyOffset) : 0,
+        snoozedUntil: null, lastComment: null, lastCompleted: null, completedBy: null, lastNotified: null,
+        notifications:      trigger.notifications || { email: false, ha: true }
+      };
+      data.tasks.push(task);
+      console.log(`[HA Trigger] "${task.name}" fired by ${trigger.entityId} → ${current}`);
+      changed = true;
+      const allUsers = data.settings.users || [];
+      const targets  = task.assignee === 'alle' ? allUsers.map(u => u.id) : [task.assignee];
+      const timeStr  = task.dueTime ? ` at ${task.dueTime}` : '';
+      const msg      = `"${task.name}" is due${timeStr}`;
+      for (const userId of targets) {
+        if (task.notifications.ha)    await sendHaNotify(data, userId, '🏠 New task', msg);
+        if (task.notifications.email) { try { await sendEmail(data, userId, task.name, msg); } catch(e) {} }
+      }
+      task.lastNotified = new Date().toISOString();
+    }
+    if (trigger.lastState !== current) { trigger.lastState = current; changed = true; }
+  }
+  if (changed) writeData(data);
+}
+
+// ─── HA Event Stream ──────────────────────────────────────────────────────────
+let haEventReq       = null;
+let haEventRetryTime = null;
+let haEventRetryMs   = 10000;
+
+function stopHaEventSubscription() {
+  if (haEventRetryTime) { clearTimeout(haEventRetryTime); haEventRetryTime = null; }
+  if (haEventReq)       { try { haEventReq.destroy(); } catch(e){} haEventReq = null; }
+}
+
+function startHaEventSubscription() {
+  stopHaEventSubscription();
+  const data = readData();
+  const { haUrl, haToken } = data.settings;
+  if (!haUrl || !haToken) return;
+
+  const url = new URL('/api/stream?restrict=mobile_app_notification_action', haUrl);
+  const lib = url.protocol === 'https:' ? https : http;
+
+  const req = lib.request({
+    hostname: url.hostname, port: url.port || (url.protocol === 'https:' ? 443 : 80),
+    path: url.pathname + url.search, method: 'GET',
+    headers: { 'Authorization': `Bearer ${haToken}`, 'Accept': 'text/event-stream' },
+    rejectUnauthorized: false
+  }, res => {
+    haEventReq     = res;
+    haEventRetryMs = 10000;
+    console.log('[HA Events] Connected ✓');
+    let buf = '';
+    res.on('data', chunk => {
+      buf += chunk.toString();
+      const lines = buf.split('\n');
+      buf = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        try {
+          const evt = JSON.parse(line.slice(6));
+          if (evt.event_type === 'mobile_app_notification_action') handleNotificationAction(evt.data);
+        } catch(e) {}
+      }
+    });
+    res.on('end',   () => { console.log('[HA Events] Stream ended'); scheduleHaReconnect(); });
+    res.on('error', () => scheduleHaReconnect());
+  });
+  req.on('error', e => {
+    console.log(`[HA Events] ${e.message} — retry in ${haEventRetryMs / 1000}s`);
+    scheduleHaReconnect();
+  });
+  haEventReq = req;
+  req.end();
+}
+
+function scheduleHaReconnect() {
+  haEventReq = null;
+  haEventRetryTime = setTimeout(() => {
+    haEventRetryMs = Math.min(haEventRetryMs * 2, 300000);
+    startHaEventSubscription();
+  }, haEventRetryMs);
+}
+
+function handleNotificationAction(eventData) {
+  const action = eventData?.action;
+  if (!action?.startsWith('HPLAN_')) return;
+
+  const data   = readData();
+  const safeId = action.replace(/^HPLAN_(COMPLETE|SNOOZE)_/, '');
+  const task   = data.tasks.find(t => t.id.replace(/-/g, '') === safeId);
+  if (!task) { console.log(`[HA Action] Task not found: ${safeId}`); return; }
+
+  if (action.startsWith('HPLAN_COMPLETE_')) {
+    const allUsers = data.settings.users || [];
+    const userId   = task.assignee === 'alle' ? (allUsers[0]?.id || 'unknown') : task.assignee;
+    const points   = task.priority === 'high' ? 3 : task.priority === 'low' ? 1 : 2;
+    if (task.scheduleMode !== 'flexible' && !task.dueDate) {
+      let nextDue = getScheduledDueAt(task) + getIntervalMs(task);
+      while (nextDue <= Date.now()) nextDue += getIntervalMs(task);
+      task.nextDueAt = new Date(nextDue).toISOString();
+    } else { task.nextDueAt = null; }
+    task.lastCompleted = new Date().toISOString();
+    task.completedBy   = userId;
+    task.lastComment   = null;
+    task.lastNotified  = null;
+    task.snoozedUntil  = null;
+    if (data.settings.gamificationEnabled !== false) {
+      if (!data.completions) data.completions = [];
+      data.completions.push({ id: uuidv4(), taskId: task.id, taskName: task.name, userId, points, date: task.lastCompleted, comment: null });
+    }
+    if (task.dueDate) {
+      if (!data.archive) data.archive = [];
+      data.archive.push({ id: uuidv4(), name: task.name, room: task.room, assignee: task.assignee, priority: task.priority || 'normal', dueDate: task.dueDate, dueTime: task.dueTime, completedBy: userId, archivedAt: task.lastCompleted, comment: null });
+      data.tasks = data.tasks.filter(t => t.id !== task.id);
+    }
+    writeData(data);
+    if (!task.dueDate) scheduleNotification(task);
+    updateHaSensors();
+    console.log(`[HA Action] Completed "${task.name}" by ${userId}`);
+
+  } else if (action.startsWith('HPLAN_SNOOZE_')) {
+    task.snoozedUntil = new Date(Date.now() + 2 * 3600000).toISOString();
+    writeData(data);
+    scheduleNotification(task);
+    console.log(`[HA Action] Snoozed "${task.name}" for 2h`);
+  }
+}
+
+module.exports = { setHaState, updateHaSensors, fetchHaStates, checkHaTriggers, startHaEventSubscription, stopHaEventSubscription };
