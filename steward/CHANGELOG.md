@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.12.0
+## 1.2.0
 ### Features
 - **Timezone support**: Automatically fetch timezone from Home Assistant or manually configure
 - Notifications and task schedules now respect user's timezone (fixes off-by-one issues in UTC± regions)
@@ -12,7 +12,7 @@
 
 ---
 
-## 1.0.2
+## 1.1.0
 ### Improvements
 - Task modal: progressive disclosure — only name, room, assignee, type and interval visible by default
 - Due type selector replaced with two-button toggle (🔁 Recurring / 📅 One-time)
