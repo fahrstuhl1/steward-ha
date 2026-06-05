@@ -25,7 +25,8 @@
     "gamificationEnabled": true,
     "archiveDays": 180,
     "planningDays": 7,
-    "theme": "dark"
+    "theme": "dark",
+    "timezone": "UTC"
   },
   "completions": [],
   "archive": []

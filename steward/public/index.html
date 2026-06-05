@@ -215,7 +215,24 @@
           <label>Planning horizon (days)</label>
           <input type="number" id="planningDays" min="1" max="30" placeholder="7" />
         </div>
-      </div>
+        <div class="form-group">
+          <label>Timezone</label>
+          <div style="display:flex;gap:8px;">
+            <select id="settingsTimezone" style="flex:1;">
+              <option value="UTC">UTC</option>
+              <option value="Europe/Berlin">Europe/Berlin (CEST)</option>
+              <option value="Europe/London">Europe/London (BST)</option>
+              <option value="America/New_York">America/New_York (EDT)</option>
+              <option value="America/Chicago">America/Chicago (CDT)</option>
+              <option value="America/Los_Angeles">America/Los_Angeles (PDT)</option>
+              <option value="Asia/Tokyo">Asia/Tokyo (JST)</option>
+              <option value="Asia/Shanghai">Asia/Shanghai (CST)</option>
+              <option value="Australia/Sydney">Australia/Sydney (AEDT)</option>
+            </select>
+            <button class="btn btn-secondary" style="padding:8px 12px;font-size:0.78rem;" onclick="syncTimezoneFromHA()" title="Fetch from Home Assistant">🔄</button>
+          </div>
+          <small style="color:var(--text2);margin-top:4px;">Current: <span id="timezoneDisplay">UTC</span></small>
+        </div>
     </div>
     <hr class="divider" />
 

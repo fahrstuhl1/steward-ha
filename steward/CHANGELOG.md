@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.12.0
+### Features
+- **Timezone support**: Automatically fetch timezone from Home Assistant or manually configure
+- Notifications and task schedules now respect user's timezone (fixes off-by-one issues in UTC± regions)
+- New `/api/sync-timezone` endpoint to fetch timezone from HA
+- Settings UI: timezone selector with common timezones and sync button
+
+### Bug Fixes
+- Prevent duplicate notifications from setTimeout/cron race condition
+
+---
+
 ## 1.0.2
 ### Improvements
 - Task modal: progressive disclosure — only name, room, assignee, type and interval visible by default

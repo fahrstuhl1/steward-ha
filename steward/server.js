@@ -77,6 +77,11 @@ function migrateData(data) {
     changed = true;
   }
 
+  if (!data.settings.timezone) {
+    data.settings.timezone = 'UTC';
+    changed = true;
+  }
+
   if (changed) atomicWrite(data);
   return data;
 }
@@ -85,9 +90,10 @@ function migrateData(data) {
 const INTERVAL_DAYS   = { daily:1, weekly:7, biweekly:14, monthly:30, quarterly:90 };
 const INTERVAL_LABELS = { daily:'Daily', weekly:'Weekly', biweekly:'Every 2 weeks', monthly:'Monthly', quarterly:'Quarterly' };
 
-function getScheduledDueAt(task) {
+function getScheduledDueAt(task, timezone = 'UTC') {
+  const offset = getTimezoneOffset(timezone);
   if (task.dueDate) {
-    return new Date(task.dueDate + 'T' + (task.dueTime || '00:00') + ':00').getTime();
+    return new Date(task.dueDate + 'T' + (task.dueTime || '00:00') + ':00').getTime() + offset;
   }
   const intervalMs = getIntervalMs(task);
   const timeStr    = task.dueTime || '00:00';
@@ -95,7 +101,7 @@ function getScheduledDueAt(task) {
     const anchorDate = task.startDate
       || (task.createdAt ? task.createdAt.slice(0, 10) : null)
       || new Date().toISOString().slice(0, 10);
-    let dueAt = new Date(anchorDate + 'T' + timeStr + ':00').getTime();
+    let dueAt = new Date(anchorDate + 'T' + timeStr + ':00').getTime() + offset;
     const after = task.lastCompleted ? new Date(task.lastCompleted).getTime() : dueAt - 1;
     while (dueAt <= after) dueAt += intervalMs;
     return dueAt;
@@ -104,14 +110,14 @@ function getScheduledDueAt(task) {
     ? new Date(new Date(task.lastCompleted).getTime() + intervalMs)
     : new Date((task.startDate || new Date().toISOString().slice(0, 10)) + 'T' + timeStr + ':00');
   if (task.dueTime) { const [h,m]=task.dueTime.split(':').map(Number); base.setHours(h,m,0,0); }
-  return base.getTime();
+  return base.getTime() + offset;
 }
 
-function getDueAt(task) {
+function getDueAt(task, timezone = 'UTC') {
   if (task.nextDueAt && task.scheduleMode !== 'flexible') {
     return new Date(task.nextDueAt).getTime();
   }
-  return getScheduledDueAt(task);
+  return getScheduledDueAt(task, timezone);
 }
 
 function getIntervalMs(task) {
@@ -119,8 +125,8 @@ function getIntervalMs(task) {
   return (INTERVAL_DAYS[task.interval] || 7) * 86400000;
 }
 
-function getNotifyAt(task) {
-  const base = getDueAt(task) - (task.notifyOffset != null ? Number(task.notifyOffset) : 0) * 60000;
+function getNotifyAt(task, timezone = 'UTC') {
+  const base = getDueAt(task, timezone) - (task.notifyOffset != null ? Number(task.notifyOffset) : 0) * 60000;
   if (task.snoozedUntil) {
     const snoozeEnd = new Date(task.snoozedUntil).getTime();
     if (snoozeEnd > Date.now()) return Math.max(base, snoozeEnd);
@@ -253,6 +259,7 @@ async function fireNotification(taskId) {
   const data = readData();
   const task = data.tasks.find(t => t.id === taskId);
   if (!task) return;
+  const timezone = data.settings.timezone || 'UTC';
   const cycleStart = task.lastCompleted ? new Date(task.lastCompleted) : new Date(0);
   if (task.lastNotified && new Date(task.lastNotified) > cycleStart) return;
   const allUsers = data.settings.users || [];
@@ -269,10 +276,10 @@ async function fireNotification(taskId) {
   writeData(data);
 }
 
-function scheduleNotification(task) {
+function scheduleNotification(task, timezone = 'UTC') {
   if (!task.notifications.email && !task.notifications.ha) return;
   if (pendingTimers[task.id]) { clearTimeout(pendingTimers[task.id]); delete pendingTimers[task.id]; }
-  const notifyAt = getNotifyAt(task);
+  const notifyAt = getNotifyAt(task, timezone);
   const delay    = notifyAt - Date.now();
   if (delay <= 0) {
     pendingTimers[task.id] = setTimeout(() => fireNotification(task.id), 500);
@@ -289,10 +296,11 @@ function scheduleNotification(task) {
 
 function restoreTimers() {
   const data = readData();
+  const timezone = data.settings.timezone || 'UTC';
   let n = 0;
   for (const task of data.tasks) {
     if (!task.notifications.email && !task.notifications.ha) continue;
-    if (getNotifyAt(task) > Date.now()) { scheduleNotification(task); n++; }
+    if (getNotifyAt(task, timezone) > Date.now()) { scheduleNotification(task, timezone); n++; }
   }
   if (n) console.log(`[Schedule] ${n} timers restored`);
 }
@@ -319,6 +327,72 @@ function fetchHaStates(data, timeoutMs = 10000) {
     req.on('error', () => resolve(null));
     req.end();
   });
+}
+
+function fetchHaConfig(data, timeoutMs = 10000) {
+  const { haUrl, haToken } = data.settings;
+  if (!haUrl || !haToken) return Promise.resolve(null);
+  const url = new URL('/api/config', haUrl);
+  const lib = url.protocol === 'https:' ? https : http;
+  return new Promise(resolve => {
+    const req = lib.request({
+      hostname: url.hostname, port: url.port || (url.protocol === 'https:' ? 443 : 80),
+      path: url.pathname, method: 'GET',
+      headers: { 'Authorization': `Bearer ${haToken}` },
+      rejectUnauthorized: false,
+      timeout: timeoutMs
+    }, res => {
+      let body = '';
+      res.on('data', c => body += c);
+      res.on('end', () => {
+        try {
+          const config = JSON.parse(body);
+          resolve(config.time_zone || null);
+        } catch(e) {
+          resolve(null);
+        }
+      });
+    });
+    req.on('timeout', () => { req.destroy(); resolve(null); });
+    req.on('error', () => resolve(null));
+    req.end();
+  });
+}
+
+function getTimezoneOffset(timezone = 'UTC') {
+  try {
+    const now = new Date();
+    const serverTz = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'UTC',
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit'
+    }).format(now);
+    const userTz = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone,
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit'
+    }).format(now);
+
+    const serverTime = new Date(serverTz.replace(/(\d+)\/(\d+)\/(\d+),\s(\d+):(\d+):(\d+)/, '$3-$1-$2T$4:$5:$6Z')).getTime();
+    const userTime = new Date(userTz.replace(/(\d+)\/(\d+)\/(\d+),\s(\d+):(\d+):(\d+)/, '$3-$1-$2T$4:$5:$6Z')).getTime();
+
+    return userTime - serverTime;
+  } catch(e) {
+    console.warn(`[Timezone] Failed to calculate offset for ${timezone}:`, e.message);
+    return 0;
+  }
+}
+
+async function syncHaTimezone() {
+  const data = readData();
+  if (!data.settings.timezone || data.settings.timezone === 'auto') {
+    const tz = await fetchHaConfig(data);
+    if (tz) {
+      data.settings.timezone = tz;
+      writeData(data);
+      console.log(`[Timezone] Auto-synced from HA: ${tz}`);
+    }
+  }
 }
 
 // ─── HA Triggers ──────────────────────────────────────────────────────────────
@@ -379,6 +453,7 @@ async function checkHaTriggers() {
 // ─── Cron: 15min fallback + 24h repeat ───────────────────────────────────────
 cron.schedule('*/15 * * * *', async () => {
   const data = readData();
+  const timezone = data.settings.timezone || 'UTC';
   let changed = false;
   const now = Date.now();
 
@@ -389,7 +464,7 @@ cron.schedule('*/15 * * * *', async () => {
     const cycleStart      = task.lastCompleted ? new Date(task.lastCompleted).getTime() : 0;
     const alreadyNotified = task.lastNotified && new Date(task.lastNotified).getTime() > cycleStart;
 
-    const notifyAt = getNotifyAt(task);
+    const notifyAt = getNotifyAt(task, timezone);
     const delayUntilNotify = notifyAt - now;
 
     if (!alreadyNotified && delayUntilNotify <= 0 && delayUntilNotify > -10 * 60000) {
@@ -465,7 +540,7 @@ app.post('/api/tasks/:id/complete', (req, res) => {
     writeData(data); updateHaSensors();
     return res.json({ success: true, archived: true });
   }
-  writeData(data); scheduleNotification(task); updateHaSensors();
+  writeData(data); scheduleNotification(task, data.settings.timezone || 'UTC'); updateHaSensors();
   res.json({ success: true, task });
 });
 
@@ -486,7 +561,7 @@ app.post('/api/tasks/:id/snooze', (req, res) => {
   if (!task) return res.status(404).json({ error: 'Not found' });
   const hours = Number(req.body.hours) || 2;
   task.snoozedUntil = new Date(Date.now() + hours * 3600000).toISOString();
-  writeData(data); scheduleNotification(task);
+  writeData(data); scheduleNotification(task, data.settings.timezone || 'UTC');
   console.log(`[Snooze] "${task.name}" snoozed for ${hours}h`);
   res.json({ success: true, snoozedUntil: task.snoozedUntil });
 });
@@ -512,7 +587,7 @@ app.post('/api/tasks', (req, res) => {
     lastCompleted:      null, completedBy: null, lastNotified: null,
     notifications:      req.body.notifications || { email: false, ha: true }
   };
-  data.tasks.push(task); writeData(data); scheduleNotification(task); updateHaSensors();
+  data.tasks.push(task); writeData(data); scheduleNotification(task, data.settings.timezone || 'UTC'); updateHaSensors();
   res.json(task);
 });
 
@@ -569,6 +644,12 @@ app.post('/api/settings', (req, res) => {
   writeData(data);
   startHaEventSubscription();
   res.json({ success: true });
+});
+
+app.get('/api/sync-timezone', async (req, res) => {
+  await syncHaTimezone();
+  const data = readData();
+  res.json({ timezone: data.settings.timezone || 'UTC' });
 });
 
 // ─── Cron: Archive cleanup daily at 03:00 ────────────────────────────────────
@@ -705,7 +786,7 @@ app.get('/api/quick-complete/:taskId/:userId', (req, res) => {
     if (!data.completions) data.completions = [];
     data.completions.push({ id: uuidv4(), taskId: task.id, taskName: task.name, userId, points, date: task.lastCompleted, comment: null });
   }
-  writeData(data); scheduleNotification(task); updateHaSensors();
+  writeData(data); scheduleNotification(task, data.settings.timezone || 'UTC'); updateHaSensors();
   const user = getUser(data, req.params.userId);
   res.send(quickPage('✓', `"${task.name}"<br>marked as done${user ? ' by ' + user.name : ''}`));
 });
@@ -716,7 +797,7 @@ app.get('/api/quick-snooze/:taskId/:hours', (req, res) => {
   if (!task) return res.status(404).send(quickPage('❓', 'Task not found'));
   const hours = Number(req.params.hours) || 2;
   task.snoozedUntil = new Date(Date.now() + hours * 3600000).toISOString();
-  writeData(data); scheduleNotification(task);
+  writeData(data); scheduleNotification(task, data.settings.timezone || 'UTC');
   res.send(quickPage('⏰', `"${task.name}"<br>snoozed for ${hours}h`));
 });
 
@@ -807,7 +888,7 @@ app.post('/api/webhook/create-task', (req, res) => {
     lastCompleted:      null, completedBy: null, lastNotified: null,
     notifications:      notifications || { email: false, ha: true }
   };
-  data.tasks.push(task); writeData(data); scheduleNotification(task);
+  data.tasks.push(task); writeData(data); scheduleNotification(task, data.settings.timezone || 'UTC');
   console.log(`[Webhook] Task created: "${task.name}" → ${task.assignee}`);
   res.json({ success: true, task });
 });
@@ -905,14 +986,14 @@ function handleNotificationAction(eventData) {
       data.tasks = data.tasks.filter(t => t.id !== task.id);
     }
     writeData(data);
-    if (!task.dueDate) scheduleNotification(task);
+    if (!task.dueDate) scheduleNotification(task, data.settings.timezone || 'UTC');
     updateHaSensors();
     console.log(`[HA Action] Completed "${task.name}" by ${userId}`);
 
   } else if (action.startsWith('HPLAN_SNOOZE_')) {
     task.snoozedUntil = new Date(Date.now() + 2 * 3600000).toISOString();
     writeData(data);
-    scheduleNotification(task);
+    scheduleNotification(task, data.settings.timezone || 'UTC');
     console.log(`[HA Action] Snoozed "${task.name}" for 2h`);
   }
 }
@@ -921,6 +1002,7 @@ function handleNotificationAction(eventData) {
 applyHaOptions();
 app.listen(PORT, () => {
   console.log(`🏠 Steward running on port ${PORT}`);
+  syncHaTimezone();
   restoreTimers();
   updateHaSensors();
   startHaEventSubscription();

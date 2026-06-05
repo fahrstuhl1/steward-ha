@@ -685,6 +685,8 @@ async function openSettings() {
   triggers = s.haTriggers || [];
   document.getElementById('archiveDays').value  = s.archiveDays  ?? 180;
   document.getElementById('planningDays').value = s.planningDays ?? 7;
+  document.getElementById('settingsTimezone').value = s.timezone || 'UTC';
+  document.getElementById('timezoneDisplay').textContent = s.timezone || 'UTC';
   document.getElementById('gamificationToggle').checked = s.gamificationEnabled !== false;
   document.getElementById('haUrl').value     = s.haUrl    || '';
   document.getElementById('haToken').value   = '';
@@ -697,6 +699,17 @@ async function openSettings() {
 
 function closeSettings() { document.getElementById('settingsModal').classList.remove('open'); }
 
+async function syncTimezoneFromHA() {
+  try {
+    const result = await fetch('/api/sync-timezone').then(r => r.json());
+    document.getElementById('settingsTimezone').value = result.timezone;
+    document.getElementById('timezoneDisplay').textContent = result.timezone;
+    showNotification(`✓ Timezone synced: ${result.timezone}`);
+  } catch(e) {
+    showNotification('✗ Failed to sync timezone from HA', true);
+  }
+}
+
 async function saveSettings() {
   const haTokenVal = document.getElementById('haToken').value;
   users = users.filter(u => u.name.trim()).map(u => ({ ...u, id: u.id.startsWith('user_') ? u.name.toLowerCase().replace(/[^a-z0-9]/g,'_') : u.id }));
@@ -706,6 +719,7 @@ async function saveSettings() {
     haTriggers:         triggers.filter(t => t.entityId.trim() && t.toState.trim()),
     archiveDays:        Number(document.getElementById('archiveDays').value)  || 180,
     planningDays:       Number(document.getElementById('planningDays').value) || 7,
+    timezone:           document.getElementById('settingsTimezone').value || 'UTC',
     gamificationEnabled: document.getElementById('gamificationToggle').checked,
     haUrl:              document.getElementById('haUrl').value.trim(),
     addonUrl:           document.getElementById('addonUrl').value.trim(),
