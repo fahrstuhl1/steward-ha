@@ -5,6 +5,7 @@ let statsData=null, statsPeriod='week';
 let gamificationEnabled=true, searchOpen=false, calendarOpen=false;
 let planningOpen=false, archiveOpen=false, planningDays=7;
 let calYear=new Date().getFullYear(), calMonth=new Date().getMonth(), calSelectedDay=null;
+let vacationActive=false, pendingPhoto=null, wasLongPress=false;
 
 const PRIORITY_ORDER = { high:0, normal:1, low:2 };
 
@@ -74,6 +75,7 @@ function initModalDrag() {
     if (dy > 110) {
       if (overlay.id === 'taskModal') closeTaskModal();
       else if (overlay.id === 'settingsModal') closeSettings();
+      else if (overlay.id === 'nlpModal') closeNlpModal();
       else submitComment(false);
     }
   }, {passive: true});
@@ -178,6 +180,7 @@ async function init() {
   initSwipe();
   initPullToRefresh();
   initModalDrag();
+  initLongPress();
 }
 
 async function loadStats() {
@@ -189,7 +192,12 @@ async function loadStats() {
   } catch(e){}
 }
 
-async function loadTasks() { tasks = await (await fetch('api/tasks')).json(); render(); }
+async function loadTasks() {
+  const res = await fetch('api/tasks');
+  vacationActive = res.headers.get('X-Vacation-Active') === 'true';
+  tasks = await res.json();
+  render();
+}
 
 async function loadSettings() {
   const s = await (await fetch('api/settings')).json();
@@ -403,7 +411,13 @@ function filteredTasks() {
   return ft;
 }
 
-function render() { renderHeader(); renderGroupTabs(); renderTasks(); }
+function render() {
+  renderHeader();
+  renderGroupTabs();
+  renderTasks();
+  const banner = document.getElementById('vacationBanner');
+  banner.style.display = vacationActive ? '' : 'none';
+}
 
 function renderHeader() {
   const ft=filteredTasks(), due=ft.filter(t=>t.isDue||t.isSoon).length, done=ft.filter(t=>!t.isDue&&!t.isSoon&&t.lastCompleted).length;
@@ -444,7 +458,7 @@ function renderTasks() {
       <div class="section-body">${visible.length ? `<div class="task-list">${visible.map(taskCard).join('')}</div>` : `<div class="waiting-placeholder">${L('section.waiting_hidden', {n: waiting.length})}</div>`}</div>
     </div>`;
   });
-  document.getElementById('taskContainer').innerHTML = html || `<div class="empty-state">${L('empty.all_done')}</div>`;
+  document.getElementById('taskContainer').innerHTML = html || `<div class="empty-state"><div class="empty-icon">✓</div><div class="empty-title">${L('empty.all_done')}</div><div class="empty-sub">${L('empty.sub')}</div></div>`;
   const btn=document.getElementById('showDoneBtn');
   if(showDone) btn.textContent=L('tasks.hide_future');
   else if(totalWaiting>0) btn.textContent=L('tasks.show_waiting_count', {n: totalWaiting});
@@ -481,7 +495,7 @@ function taskCard(t) {
 
   return `<div class="task-card ${cardClass}" data-id="${t.id}">
     <button class="check-btn" onclick="toggleComplete('${t.id}')">${checkIcon}</button>
-    <div class="task-info" onclick="openEditModal('${t.id}')" style="cursor:pointer">
+    <div class="task-info" onclick="onTaskInfoClick('${t.id}')" style="cursor:pointer">
       <div class="task-name">${priorityDot}${t.name}</div>
       <div class="task-meta">${badgeHtml}<span class="meta-dot">·</span><span class="meta-text">${intervalLabel}</span><span class="meta-dot">·</span>${waitingLabel}${notifyHint}</div>
       ${snoozeHint}${commentLine}
@@ -515,17 +529,22 @@ async function submitComment(save) {
   document.getElementById('commentModal').classList.remove('open');
   if (!pendingCompleteId) return;
   const checkBtn = document.querySelector(`[data-id="${pendingCompleteId}"] .check-btn`);
+  const rect = checkBtn?.getBoundingClientRect();
   btnLoading(checkBtn, true);
   const comment = save ? document.getElementById('commentInput').value.trim() : null;
   const userId  = document.getElementById('completedBySelect').value || pendingCompleteUserId;
+  const photo   = pendingPhoto;
+  clearPhoto();
   try {
-    await fetch(`api/tasks/${pendingCompleteId}/complete`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ userId, comment }) });
+    await fetch(`api/tasks/${pendingCompleteId}/complete`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ userId, comment, photo }) });
     const completedId = pendingCompleteId;
     const completedName = tasks.find(t=>t.id===completedId)?.name || '';
     pendingCompleteId = null; pendingCompleteUserId = null;
     await loadTasks();
     lastCompletedId = completedId;
     showUndoToast(completedName);
+    vibrate([50, 30, 50]);
+    if (rect) spawnConfetti(rect.left + rect.width / 2, rect.top + rect.height / 2);
   } finally { btnLoading(checkBtn, false); }
 }
 
@@ -850,6 +869,9 @@ async function openSettings() {
   document.getElementById('settingsTimezone').value = s.timezone || 'UTC';
   document.getElementById('timezoneDisplay').textContent = s.timezone || 'UTC';
   document.getElementById('gamificationToggle').checked = s.gamificationEnabled !== false;
+  document.getElementById('weeklySummaryToggle').checked = s.weeklySummaryEnabled !== false;
+  document.getElementById('vacationFrom').value = s.vacationFrom || '';
+  document.getElementById('vacationTo').value   = s.vacationTo   || '';
   document.getElementById('haUrl').value     = s.haUrl    || '';
   document.getElementById('haToken').value   = '';
   document.getElementById('addonUrl').value  = s.addonUrl || '';
@@ -883,7 +905,10 @@ async function saveSettings() {
     archiveDays:        Number(document.getElementById('archiveDays').value)  || 180,
     planningDays:       Number(document.getElementById('planningDays').value) || 7,
     timezone:           document.getElementById('settingsTimezone').value || 'UTC',
-    gamificationEnabled: document.getElementById('gamificationToggle').checked,
+    gamificationEnabled:  document.getElementById('gamificationToggle').checked,
+    weeklySummaryEnabled: document.getElementById('weeklySummaryToggle').checked,
+    vacationFrom:         document.getElementById('vacationFrom').value || null,
+    vacationTo:           document.getElementById('vacationTo').value   || null,
     haUrl:              document.getElementById('haUrl').value.trim(),
     addonUrl:           document.getElementById('addonUrl').value.trim(),
     gmailUser:          document.getElementById('gmailUser').value.trim(),
@@ -900,16 +925,17 @@ async function saveSettings() {
   } finally { btnLoading(saveBtn, false); }
 }
 
-['taskModal','settingsModal','commentModal'].forEach(id => {
+['taskModal','settingsModal','commentModal','nlpModal'].forEach(id => {
   document.getElementById(id).addEventListener('click', e => {
     if (e.target !== e.currentTarget) return;
     if (id==='taskModal') closeTaskModal();
     else if (id==='settingsModal') closeSettings();
+    else if (id==='nlpModal') closeNlpModal();
     else submitComment(false);
   });
 });
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') { closeTaskModal(); closeSettings(); submitComment(false); }
+  if (e.key === 'Escape') { closeTaskModal(); closeSettings(); submitComment(false); closeNlpModal(); }
   if (e.key === 'Enter' && document.getElementById('commentModal').classList.contains('open')) submitComment(true);
 });
 
@@ -937,6 +963,174 @@ async function handleImport(input) {
     alert(L('alert.import_success', {tasks: result.tasks, completions: result.completions}));
     closeSettings(); await loadSettings(); await loadTasks(); await loadStats();
   } else { alert('Import failed: ' + result.error); }
+}
+
+// ── Haptic & animation helpers ──────────────────────────────────────────────
+function vibrate(pattern) { if (navigator.vibrate) navigator.vibrate(pattern); }
+
+function spawnConfetti(x, y) {
+  const colors = ['#5b9cf6','#f472b6','#a78bfa','#34d399','#fb923c','#f87171'];
+  for (let i = 0; i < 14; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'confetti-dot';
+    const angle = (i / 14) * 360 + Math.random() * 26;
+    const dist  = 35 + Math.random() * 55;
+    dot.style.setProperty('--tx', (Math.cos(angle * Math.PI / 180) * dist).toFixed(1) + 'px');
+    dot.style.setProperty('--ty', (Math.sin(angle * Math.PI / 180) * dist).toFixed(1) + 'px');
+    dot.style.setProperty('--r',  (Math.random() * 720 - 360).toFixed(0) + 'deg');
+    dot.style.background = colors[i % colors.length];
+    dot.style.left = x + 'px';
+    dot.style.top  = y + 'px';
+    document.body.appendChild(dot);
+    dot.addEventListener('animationend', () => dot.remove());
+  }
+}
+
+// ── Photo capture ───────────────────────────────────────────────────────────
+async function compressPhoto(file) {
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const MAX = 240;
+        let w = img.width, h = img.height;
+        if (w > h) { if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; } }
+        else       { if (h > MAX) { w = Math.round(w * MAX / h); h = MAX; } }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', 0.65));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function handlePhotoInput(input) {
+  const file = input.files[0]; if (!file) return;
+  pendingPhoto = await compressPhoto(file);
+  document.getElementById('photoPreview').src            = pendingPhoto;
+  document.getElementById('photoPreview').style.display  = '';
+  document.getElementById('photoClearBtn').style.display = '';
+  const addBtn = document.getElementById('photoAddBtn');
+  addBtn.dataset.i18n = 'photo.change';
+  addBtn.textContent  = L('photo.change');
+}
+
+function clearPhoto() {
+  pendingPhoto = null;
+  document.getElementById('photoInput').value            = '';
+  document.getElementById('photoPreview').style.display  = 'none';
+  document.getElementById('photoClearBtn').style.display = 'none';
+  const addBtn = document.getElementById('photoAddBtn');
+  addBtn.dataset.i18n = 'photo.add';
+  addBtn.textContent  = L('photo.add');
+}
+
+// ── NLP Quick-Add ───────────────────────────────────────────────────────────
+function parseNLP(text) {
+  const result = { name: text.trim(), interval: 'weekly', dueDate: null, assignee: null, room: null };
+  if      (/täglich|every day|daily/i.test(text))                        result.interval = 'daily';
+  else if (/zweiwöchentlich|every two weeks|biweekly|alle 2 wochen/i.test(text)) result.interval = 'biweekly';
+  else if (/monatlich|every month|monthly/i.test(text))                  result.interval = 'monthly';
+  else if (/vierteljährlich|quarterly/i.test(text))                      result.interval = 'quarterly';
+  else if (/wöchentlich|every week|weekly/i.test(text))                  result.interval = 'weekly';
+  const dateMatch = text.match(/(\d{1,2})[.\-/](\d{1,2})(?:[.\-/](\d{2,4}))?/);
+  if (dateMatch) {
+    const d = dateMatch[1].padStart(2, '0'), m = dateMatch[2].padStart(2, '0');
+    const y = dateMatch[3] ? (dateMatch[3].length === 2 ? '20' + dateMatch[3] : dateMatch[3]) : new Date().getFullYear();
+    result.dueDate = `${y}-${m}-${d}`; result.interval = 'once';
+  }
+  let cleanName = text;
+  users.forEach(u => { if (new RegExp('\\b' + u.name + '\\b', 'i').test(text)) { result.assignee = u.id; cleanName = cleanName.replace(new RegExp(u.name, 'gi'), ''); } });
+  rooms.forEach(r => { if (new RegExp('\\b' + r.name + '\\b', 'i').test(text)) { result.room = r.id; cleanName = cleanName.replace(new RegExp(r.name, 'gi'), ''); } });
+  cleanName = cleanName
+    .replace(/täglich|every day|daily|zweiwöchentlich|every two weeks|biweekly|alle 2 wochen|monatlich|every month|monthly|vierteljährlich|quarterly|wöchentlich|every week|weekly/gi, '')
+    .replace(dateMatch ? dateMatch[0] : /(?:)/, '')
+    .trim().replace(/\s+/g, ' ');
+  if (cleanName) result.name = cleanName;
+  return result;
+}
+
+function updateNlpTags() {
+  const text = document.getElementById('nlpInput').value;
+  if (!text.trim()) { document.getElementById('nlpTags').innerHTML = ''; return; }
+  const p = parseNLP(text);
+  const tags = [];
+  if (p.interval && p.interval !== 'once') tags.push(`<span class="nlp-tag">${L('interval.' + p.interval) || p.interval}</span>`);
+  if (p.dueDate)  tags.push(`<span class="nlp-tag">${p.dueDate}</span>`);
+  if (p.assignee) { const u = users.find(u => u.id === p.assignee); if (u) tags.push(`<span class="nlp-tag" style="border-color:${u.color};color:${u.color}">${u.name}</span>`); }
+  if (p.room)     { const r = rooms.find(r => r.id === p.room); if (r) tags.push(`<span class="nlp-tag">${r.icon} ${r.name}</span>`); }
+  document.getElementById('nlpTags').innerHTML = tags.join('');
+}
+
+function openNlpModal() {
+  document.getElementById('nlpInput').value = '';
+  document.getElementById('nlpTags').innerHTML = '';
+  document.getElementById('nlpModal').classList.add('open');
+  setTimeout(() => document.getElementById('nlpInput').focus(), 300);
+}
+function closeNlpModal() { document.getElementById('nlpModal').classList.remove('open'); }
+
+async function submitNlp() {
+  const text = document.getElementById('nlpInput').value.trim();
+  if (!text) return;
+  const p = parseNLP(text);
+  const body = {
+    name:      p.name || text,
+    interval:  p.dueDate ? 'weekly' : (p.interval || 'weekly'),
+    dueDate:   p.dueDate  || null,
+    assignee:  p.assignee || (currentView !== 'alle' ? currentView : (users[0]?.id || 'alle')),
+    room:      p.room     || (currentGroup !== 'alle' ? currentGroup : 'general'),
+    priority:  'normal',
+    notifications: { ha: true, email: false }
+  };
+  const btn = document.querySelector('#nlpModal .btn-primary');
+  btnLoading(btn, true);
+  try {
+    await fetch('api/tasks', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    closeNlpModal();
+    await loadTasks();
+  } finally { btnLoading(btn, false); }
+}
+
+// ── Long-press context menu ─────────────────────────────────────────────────
+function onTaskInfoClick(id) {
+  if (wasLongPress) { wasLongPress = false; return; }
+  openEditModal(id);
+}
+
+function initLongPress() {
+  let lpTimer = null, lpActive = false;
+  const container = document.getElementById('taskMain');
+  container.addEventListener('touchstart', e => {
+    const card = e.target.closest('[data-id]'); if (!card) return;
+    if (!e.target.closest('.task-info')) return;
+    const id = card.dataset.id;
+    lpActive = false;
+    lpTimer = setTimeout(() => {
+      lpActive = true;
+      wasLongPress = true;
+      vibrate(40);
+      const ctxBtn = card.querySelector('.task-action-btn');
+      const fakeE  = { stopPropagation: () => {}, currentTarget: ctxBtn || e.target, target: ctxBtn || e.target };
+      openCtxMenu(fakeE, id);
+    }, 500);
+  }, {passive: true});
+  container.addEventListener('touchmove', () => { clearTimeout(lpTimer); lpTimer = null; }, {passive: true});
+  container.addEventListener('touchend', () => {
+    clearTimeout(lpTimer); lpTimer = null;
+    if (lpActive) {
+      lpActive = false;
+      // intercept the synthetic click that fires after touchend so it doesn't immediately close the menu
+      document.addEventListener('click', function killOnce(ev) {
+        ev.stopPropagation();
+        document.removeEventListener('click', killOnce, true);
+      }, {capture: true, once: true});
+    }
+  }, {passive: true});
 }
 
 init();

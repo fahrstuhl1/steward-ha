@@ -1,5 +1,5 @@
 # 🏠 Steward — Home Assistant Add-on Repository
-![Version](https://img.shields.io/badge/version-1.5.1-blue?style=flat-square)
+![Version](https://img.shields.io/badge/version-1.6.0-blue?style=flat-square)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![HACS](https://img.shields.io/badge/HACS-Custom%20Repository-orange?style=flat-square)](https://hacs.xyz)
 
@@ -42,6 +42,10 @@ Further configuration (users, rooms, HA triggers, addon URL) is done inside the 
 - **Waiting state** — completed recurring tasks are hidden by default; the toggle button shows their count (e.g. "Show waiting (3) & future") and reveals them on tap
 - **Duplicate** — copy any task into the edit modal with one tap (⧉ button)
 - **Skip occurrence** — advance a recurring task to its next scheduled date without recording a completion (⏩ button)
+- **Natural Language Quick-Add** — tap ✨ in the header to create tasks by typing naturally ("Water plants every Friday"); keywords for interval, date, assignee and room are auto-detected
+- **Photo on completion** — attach a photo when marking a task done; compressed and stored in history
+- **Vacation Mode** — set a date range in Settings; tasks won't show as due and notifications are paused; banner shown in app
+- **Weekly Summary** — optional Monday morning push/email with the week's completed tasks
 
 ### Due Status Colors
 | Color | Meaning |

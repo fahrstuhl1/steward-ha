@@ -10,12 +10,19 @@ const { updateHaSensors } = require('../lib/ha');
 const quickPage = (icon, text) => `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{font-family:-apple-system,sans-serif;background:#1a1d27;color:#dde1f0;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;text-align:center;}h1{font-size:3.5rem;margin:0 0 8px;}p{color:#7c819a;font-size:1rem;}</style></head><body><div><h1>${icon}</h1><p>${text}</p></div></body></html>`;
 
 router.get('/', (req, res) => {
-  const data = readData();
+  const data   = readData();
+  const nowDate = new Date();
+  const vacFrom = data.settings.vacationFrom ? new Date(data.settings.vacationFrom) : null;
+  const vacTo   = data.settings.vacationTo   ? new Date(data.settings.vacationTo + 'T23:59:59') : null;
+  const onVacation = vacFrom && vacTo && nowDate >= vacFrom && nowDate <= vacTo;
+  if (onVacation) res.setHeader('X-Vacation-Active', 'true');
   res.json(data.tasks.map(t => ({
     ...t,
-    isDue: isDue(t), isSoon: isSoon(t), nextDue: nextDueDate(t),
-    nextDueData: nextDueSerialized(t),
-    dueAtMs: getDueAt(t),
+    isDue:        onVacation ? false : isDue(t),
+    isSoon:       onVacation ? false : isSoon(t),
+    nextDue:      nextDueDate(t),
+    nextDueData:  nextDueSerialized(t),
+    dueAtMs:      getDueAt(t),
     intervalLabel: INTERVAL_LABELS[t.interval]
   })));
 });
@@ -81,7 +88,7 @@ router.post('/:id/complete', (req, res) => {
   task.snoozedUntil  = null;
   if (data.settings.gamificationEnabled !== false) {
     if (!data.completions) data.completions = [];
-    data.completions.push({ id: uuidv4(), taskId: task.id, taskName: task.name, userId, points, date: task.lastCompleted, comment: task.lastComment });
+    data.completions.push({ id: uuidv4(), taskId: task.id, taskName: task.name, userId, points, date: task.lastCompleted, comment: task.lastComment, photo: req.body.photo || null });
   }
   if (task.dueDate) {
     if (!data.archive) data.archive = [];

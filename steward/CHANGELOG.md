@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.6.0
+### Features
+- **Touch-Target & Haptic**: Haken-Button auf 36 × 36 px vergrößert (bessere Treffbarkeit); Vibration beim Abschluss (`[50, 30, 50]` ms Pattern)
+- **Abschluss-Animation**: Konfetti-Partikel und Pulsring erscheinen an der Position des Haken-Buttons wenn eine Aufgabe erledigt wird
+- **Long-Press Kontext-Menü**: 500 ms Drücken auf den Info-Bereich einer Kachel öffnet das Kontext-Menü — gleicher Inhalt wie `···`-Button, Vibration als Feedback
+- **Verbesserter Empty State**: Leere Aufgabenliste zeigt Icon, Titel und motivierenden Untertitel statt reinem Text
+- **Foto bei Abschluss**: Im Kommentar-Modal kann ein Foto aufgenommen oder aus der Galerie gewählt werden; wird komprimiert (240 × 240 px, JPEG 65 %) und in der Abschluss-Historie gespeichert
+- **Natürliche Sprache (Quick Add)**: `✨`-Button im Header öffnet ein Modal mit Freitexteingabe; Stichwörter für Intervall, Datum, Nutzer und Raum werden automatisch erkannt und als Tags angezeigt
+- **Wöchentliche Zusammenfassung**: Optionaler Cron-Job jeden Montag 07:00 UTC sendet eine Zusammenfassung der erledigten Aufgaben der letzten Woche via HA-Push und/oder E-Mail; Ein/Aus per Einstellungs-Toggle
+- **Urlaubs-Modus**: Zeitraum (Von / Bis) in den Einstellungen hinterlegen; während des Urlaubs werden Aufgaben nicht als fällig markiert, Benachrichtigungen werden pausiert und ein Banner am oberen Bildschirmrand wird eingeblendet
+
+---
+
 ## 1.5.1
 ### Bug Fixes
 - **Edit-Modal**: "Weitere Optionen" wurde beim Öffnen nicht zurückgesetzt — blieb im zuletzt hinterlassenen Zustand; wird nun immer eingeklappt geöffnet

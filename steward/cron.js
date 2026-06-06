@@ -7,6 +7,12 @@ const { updateHaSensors, checkHaTriggers } = require('./lib/ha');
 // 15-minute fallback: send missed notifications + 24h repeat for still-pending tasks
 cron.schedule('*/15 * * * *', async () => {
   const data = readData();
+  // Skip all notifications while vacation mode is active
+  const nowDate = new Date();
+  const vacFrom = data.settings.vacationFrom ? new Date(data.settings.vacationFrom) : null;
+  const vacTo   = data.settings.vacationTo   ? new Date(data.settings.vacationTo + 'T23:59:59') : null;
+  if (vacFrom && vacTo && nowDate >= vacFrom && nowDate <= vacTo) return;
+
   let changed = false;
   const now = Date.now();
 
@@ -69,3 +75,29 @@ cron.schedule('* * * * *', async () => { await checkHaTriggers(); });
 
 // HA sensor update every 5 minutes
 cron.schedule('*/5 * * * *', async () => { await updateHaSensors(); });
+
+// Weekly summary: Monday 07:00 UTC
+cron.schedule('0 7 * * 1', async () => {
+  const data = readData();
+  if (!data.settings.weeklySummaryEnabled) return;
+  const oneWeekAgo = Date.now() - 7 * 86400000;
+  const recent = (data.completions || []).filter(c => new Date(c.date).getTime() > oneWeekAgo);
+  if (!recent.length) return;
+  const allUsers = data.settings.users || [];
+  const lines    = recent.map(c => {
+    const u = allUsers.find(u => u.id === c.userId);
+    return `• ${c.taskName} (${u ? u.name : c.userId})`;
+  });
+  const msg = `Weekly summary: ${recent.length} task${recent.length !== 1 ? 's' : ''} completed\n` + lines.slice(0, 15).join('\n');
+  console.log('[WeeklySummary]', msg);
+  const targets = [...new Set(allUsers.map(u => u.id))];
+  for (const userId of targets) {
+    if (data.settings.notifications?.ha !== false) {
+      try { await sendHaNotify(data, userId, '📋 Weekly Summary', msg, null); } catch(e) {}
+    }
+    const user = allUsers.find(u => u.id === userId);
+    if (user?.email && data.settings.gmailUser) {
+      try { await sendEmail(data, userId, 'Steward Weekly Summary', msg); } catch(e) {}
+    }
+  }
+});

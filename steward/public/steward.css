@@ -102,8 +102,12 @@ main { max-width: 640px; margin: 0 auto; padding: 16px 14px 60px; }
 .task-card.waiting { padding: 9px 14px; opacity: 0.72; border-left-color: rgba(148,163,184,0.35); }
 .task-card.waiting:hover { opacity: 0.9; }
 .task-card.waiting .task-name { font-size: 0.84rem; color: var(--text2); }
-.check-btn { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--border2); background: transparent; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; color: transparent; transition: all 0.12s, transform 0.1s; }
-.check-btn:active { transform: scale(0.85); }
+.check-btn { width: 36px; height: 36px; border-radius: 50%; border: 1.5px solid var(--border2); background: transparent; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; color: transparent; transition: all 0.12s, transform 0.1s; }
+.check-btn:active { transform: scale(0.82); }
+@keyframes checkPulse { 0%{box-shadow:0 0 0 0 rgba(74,222,128,0.55)} 65%{box-shadow:0 0 0 16px rgba(74,222,128,0)} 100%{box-shadow:0 0 0 16px rgba(74,222,128,0)} }
+.check-btn.pulse { animation: checkPulse 0.5s ease-out; }
+@keyframes confettiFall { 0%{opacity:1;transform:translate(0,0) rotate(0deg) scale(1)} 100%{opacity:0;transform:translate(var(--tx),var(--ty)) rotate(var(--r)) scale(0.3)} }
+.confetti-dot { position:fixed; width:7px; height:7px; border-radius:50%; pointer-events:none; z-index:9999; animation:confettiFall 0.75s ease-out forwards; }
 .task-card.done .check-btn { background: var(--green); border-color: var(--green); color: #fff; }
 .task-card.waiting .check-btn { font-size: 0.75rem; color: var(--text3); border-color: var(--border2); }
 .check-btn:hover { border-color: var(--green); color: rgba(74,222,128,0.5); }
@@ -128,7 +132,20 @@ main { max-width: 640px; margin: 0 auto; padding: 16px 14px 60px; }
 .task-action-btn:hover { color: var(--text); background: var(--surface2); }
 .show-done-btn { width: 100%; padding: 7px; margin-top: 12px; background: none; border: 1px solid var(--border); border-radius: var(--r-sm); color: var(--text3); font-size: 0.76rem; cursor: pointer; transition: all 0.12s; }
 .show-done-btn:hover { border-color: var(--border2); color: var(--text2); }
-.empty-state { text-align: center; color: var(--text3); padding: 36px 20px; font-size: 0.86rem; }
+.empty-state { text-align: center; padding: 56px 20px 36px; }
+.empty-icon { font-size: 2.4rem; margin-bottom: 10px; opacity: 0.25; }
+.empty-title { font-size: 0.95rem; font-weight: 600; color: var(--text2); margin-bottom: 5px; }
+.empty-sub { font-size: 0.8rem; color: var(--text3); }
+.vacation-banner { background: rgba(91,156,246,0.1); border: 1px solid rgba(91,156,246,0.22); border-radius: var(--r-sm); padding: 10px 14px; margin: 0 14px 10px; display: flex; align-items: center; gap: 10px; font-size: 0.82rem; color: #5b9cf6; }
+.vacation-banner strong { display:block; font-size:0.84rem; }
+.vacation-banner small { font-size:0.74rem; opacity:0.85; }
+.nlp-input { font-size: 0.95rem !important; }
+.nlp-tags { display: flex; flex-wrap: wrap; gap: 6px; min-height: 24px; margin: 6px 0 10px; }
+.nlp-tag { font-size: 0.72rem; font-weight: 600; padding: 3px 9px; border-radius: 10px; background: rgba(91,156,246,0.15); color: #5b9cf6; }
+.photo-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.photo-btn { font-size: 0.82rem; padding: 7px 12px; background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--r-sm); cursor: pointer; color: var(--text2); }
+.photo-preview { width: 56px; height: 56px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border2); }
+.photo-clear-btn { font-size: 0.7rem; color: var(--text3); background: none; border: none; cursor: pointer; padding: 4px; }
 .waiting-placeholder { padding: 8px 14px; font-size: 0.72rem; color: var(--text3); font-style: italic; }
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); display: flex; align-items: flex-end; justify-content: center; z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.18s; }
 .modal-overlay.open { opacity: 1; pointer-events: all; }
