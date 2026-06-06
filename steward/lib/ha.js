@@ -1,7 +1,7 @@
 const https = require('https');
 const http  = require('http');
 const { v4: uuidv4 } = require('uuid');
-const { readData, writeData } = require('./data');
+const { readData, writeData, isOnVacation } = require('./data');
 const { getScheduledDueAt, getIntervalMs, isDue, isSoon, nextDueDate } = require('./time');
 const { sendHaNotify, sendEmail, scheduleNotification } = require('./notifications');
 
@@ -49,10 +49,7 @@ async function updateHaSensors() {
   const users = data.settings.users || [];
   const rooms = data.settings.rooms || [];
 
-  const nowDate = new Date();
-  const vacFrom = data.settings.vacationFrom ? new Date(data.settings.vacationFrom) : null;
-  const vacTo   = data.settings.vacationTo   ? new Date(data.settings.vacationTo + 'T23:59:59') : null;
-  const onVacation = vacFrom && vacTo && nowDate >= vacFrom && nowDate <= vacTo;
+  const onVacation = isOnVacation(data.settings);
 
   const dueTasks  = onVacation ? [] : tasks.filter(t => isDue(t));
   const soonTasks = onVacation ? [] : tasks.filter(t => !isDue(t) && isSoon(t));

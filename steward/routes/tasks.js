@@ -44,6 +44,8 @@ router.post('/', (req, res) => {
     dueDate:            req.body.dueDate            || null,
     dueTime:            req.body.dueTime            || null,
     notifyOffset:       req.body.notifyOffset != null ? Number(req.body.notifyOffset) : 0,
+    notifyTimeWeekday:  req.body.notifyTimeWeekday  || null,
+    notifyTimeWeekend:  req.body.notifyTimeWeekend  || null,
     snoozedUntil: null, lastComment: null,
     lastCompleted: null, completedBy: null, lastNotified: null,
     notify: req.body.notify !== false

@@ -69,7 +69,7 @@ async function fireNotification(taskId) {
   console.log(`[Notify] ${msg}`);
   for (const userId of targets) {
     await sendHaNotify(data, userId, '🏠 Task due', msg, task.id);
-    try { await sendEmail(data, userId, task.name, msg); } catch(e) { /* unconfigured */ }
+    try { await sendEmail(data, userId, task.name, msg); } catch(e) { if (data.settings.gmailUser) console.error(`[Notify] email ${userId}: ${e.message}`); }
   }
   task.lastNotified = new Date().toISOString();
   writeData(data);
