@@ -389,9 +389,9 @@ function renderTasks() {
     const waiting = group.filter(t => !t.isDue && !t.isSoon && t.lastCompleted && !t.dueDate);
     const future  = group.filter(t => !t.isDue && !t.isSoon && !(t.lastCompleted && !t.dueDate));
     due.sort((a,b)=>{ if(a.isDue!==b.isDue) return a.isDue?-1:1; return PRIORITY_ORDER[a.priority||'normal']-PRIORITY_ORDER[b.priority||'normal']; });
-    if(!showDone) totalWaiting+=waiting.length;
     const visible = [...due, ...(showDone ? [...waiting, ...future] : [])];
-    if(!visible.length) return;
+    if(!visible.length && !waiting.length) return;
+    if(!showDone) totalWaiting+=waiting.length;
     const collapsed=collapsedRooms.has(r.id);
     html+=`<div class="section ${collapsed?'collapsed':''}" id="sec-${r.id}">
       <div class="section-header" onclick="toggleRoom('${r.id}')">
@@ -399,7 +399,7 @@ function renderTasks() {
         ${due.length?`<span class="section-due-count">${L('section.due_count', {n: due.length})}</span>`:''}
         <span class="section-chevron">▾</span>
       </div>
-      <div class="section-body"><div class="task-list">${visible.map(taskCard).join('')}</div></div>
+      <div class="section-body">${visible.length ? `<div class="task-list">${visible.map(taskCard).join('')}</div>` : `<div class="waiting-placeholder">${L('section.waiting_hidden', {n: waiting.length})}</div>`}</div>
     </div>`;
   });
   document.getElementById('taskContainer').innerHTML = html || `<div class="empty-state">${L('empty.all_done')}</div>`;
@@ -434,6 +434,8 @@ function taskCard(t) {
   const snoozeHint    = t.snoozedUntil && new Date(t.snoozedUntil) > new Date() ? `<div class="snooze-hint">${L('snooze.hint', {time: new Date(t.snoozedUntil).toLocaleTimeString(document.documentElement.lang === 'de' ? 'de-DE' : 'en-GB', {hour:'2-digit',minute:'2-digit'})})}</div>` : '';
   const commentLine   = t.lastComment ? `<div class="comment-text">💬 ${t.lastComment}</div>` : '';
   const snoozeBtn     = (isNow || isSoonFlag) ? `<button class="task-action-btn" onclick="snoozeTask('${t.id}')" title="Snooze">⏰</button>` : '';
+  const skipBtn       = !t.dueDate ? `<button class="task-action-btn" onclick="skipTask('${t.id}')" title="${L('btn.skip_task')}">⏩</button>` : '';
+  const dupeBtn       = `<button class="task-action-btn" onclick="duplicateTask('${t.id}')" title="${L('btn.duplicate')}">⧉</button>`;
   const checkIcon     = isWaiting ? '⏳' : '✓';
   const nextDueStr    = formatNextDue(t.nextDueData) || t.nextDue;
   const waitingLabel  = isWaiting ? `<span class="due-label muted">⏳ ${L('state.waiting')} · ${nextDueStr}</span>` : `<span class="due-label ${dueClass}">${nextDueStr}</span>`;
@@ -445,7 +447,7 @@ function taskCard(t) {
       <div class="task-meta">${badgeHtml}<span class="meta-dot">·</span><span class="meta-text">${intervalLabel}</span><span class="meta-dot">·</span>${waitingLabel}${notifyHint}</div>
       ${snoozeHint}${commentLine}
     </div>
-    <div class="task-actions">${snoozeBtn}<button class="task-action-btn" onclick="openEditModal('${t.id}')">✏</button><button class="task-action-btn" onclick="deleteTask('${t.id}')">✕</button></div>
+    <div class="task-actions">${snoozeBtn}${skipBtn}${dupeBtn}<button class="task-action-btn" onclick="openEditModal('${t.id}')">✏</button><button class="task-action-btn" onclick="deleteTask('${t.id}')">✕</button></div>
   </div>`;
 }
 
@@ -483,6 +485,17 @@ async function submitComment(save) {
 async function snoozeTask(id) {
   await fetch(`api/tasks/${id}/snooze`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({hours:2}) });
   await loadTasks();
+}
+
+async function skipTask(id) {
+  await fetch(`api/tasks/${id}/skip`, { method:'POST' });
+  await loadTasks();
+}
+
+function duplicateTask(id) {
+  openEditModal(id);
+  editingTaskId = null;
+  document.getElementById('modalTitle').textContent = L('modal.duplicate_task');
 }
 
 async function deleteTask(id) {
@@ -595,8 +608,10 @@ function openEditModal(id) {
   document.getElementById('taskDueDate').value=task.dueDate||'';
   document.getElementById('taskDueTime').value=task.dueTime||'';
   document.getElementById('taskNotifyOffset').value=String(task.notifyOffset||0);
-  document.getElementById('notifHa').checked=task.notifications.ha||false;
-  document.getElementById('notifEmail').checked=task.notifications.email||false;
+  document.getElementById('taskNotifyTimeWeekday').value=task.notifyTimeWeekday||'';
+  document.getElementById('taskNotifyTimeWeekend').value=task.notifyTimeWeekend||'';
+  document.getElementById('notifHa').checked=(task.notifications?.ha)||false;
+  document.getElementById('notifEmail').checked=(task.notifications?.email)||false;
   // show advanced panel when editing (user expects all fields)
   document.getElementById('moreOptionsPanel').style.display='';
   document.getElementById('moreOptionsChevron').textContent='▴';
@@ -621,8 +636,10 @@ async function saveTask() {
     intervalCustomDays: document.getElementById('taskInterval').value === 'custom' ? Number(document.getElementById('taskIntervalCustomDays').value)||null : null,
     startDate:          mode==='interval' ? document.getElementById('taskStartDate').value||null : null,
     dueDate:            mode==='fixed'    ? document.getElementById('taskDueDate').value||null    : null,
-    dueTime:            document.getElementById('taskDueTime').value||null,
-    notifyOffset:       Number(document.getElementById('taskNotifyOffset').value)||0,
+    dueTime:              document.getElementById('taskDueTime').value||null,
+    notifyOffset:         Number(document.getElementById('taskNotifyOffset').value)||0,
+    notifyTimeWeekday:    document.getElementById('taskNotifyTimeWeekday').value||null,
+    notifyTimeWeekend:    document.getElementById('taskNotifyTimeWeekend').value||null,
     notifications: { ha: document.getElementById('notifHa').checked, email: document.getElementById('notifEmail').checked }
   };
   if(!body.name) { alert(L('alert.no_name')); return; }

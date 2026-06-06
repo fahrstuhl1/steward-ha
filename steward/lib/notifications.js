@@ -78,7 +78,7 @@ async function fireNotification(taskId) {
 function scheduleNotification(task) {
   if (!task.notifications.email && !task.notifications.ha) return;
   if (pendingTimers[task.id]) { clearTimeout(pendingTimers[task.id]); delete pendingTimers[task.id]; }
-  const notifyAt = getNotifyAt(task);
+  const notifyAt = getNotifyAt(task, readData().settings.timezone);
   const delay    = notifyAt - Date.now();
   if (delay <= 0) {
     pendingTimers[task.id] = setTimeout(() => fireNotification(task.id), 500);

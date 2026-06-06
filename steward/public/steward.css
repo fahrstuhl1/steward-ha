@@ -129,6 +129,7 @@ main { max-width: 640px; margin: 0 auto; padding: 16px 14px 60px; }
 .show-done-btn { width: 100%; padding: 7px; margin-top: 12px; background: none; border: 1px solid var(--border); border-radius: var(--r-sm); color: var(--text3); font-size: 0.76rem; cursor: pointer; transition: all 0.12s; }
 .show-done-btn:hover { border-color: var(--border2); color: var(--text2); }
 .empty-state { text-align: center; color: var(--text3); padding: 36px 20px; font-size: 0.86rem; }
+.waiting-placeholder { padding: 8px 14px; font-size: 0.72rem; color: var(--text3); font-style: italic; }
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); display: flex; align-items: flex-end; justify-content: center; z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.18s; }
 .modal-overlay.open { opacity: 1; pointer-events: all; }
 .modal { background: var(--surface); border: 1px solid var(--border2); border-bottom: none; border-radius: 14px 14px 0 0; padding: 6px 20px 24px; padding-bottom: max(24px, env(safe-area-inset-bottom)); width: 100%; max-width: 540px; box-shadow: 0 -12px 48px rgba(0,0,0,0.4); transform: translateY(100%); transition: transform 0.26s cubic-bezier(0.32,0.72,0,1); max-height: 92vh; overflow-y: auto; }

@@ -105,6 +105,26 @@ router.post('/:id/reset', async (req, res) => {
   res.json({ success: true, task });
 });
 
+router.post('/:id/skip', (req, res) => {
+  const data = readData();
+  const task = data.tasks.find(t => t.id === req.params.id);
+  if (!task) return res.status(404).json({ error: 'Not found' });
+  if (task.dueDate) {
+    data.tasks = data.tasks.filter(t => t.id !== task.id);
+    writeData(data); updateHaSensors();
+    return res.json({ success: true });
+  }
+  const currentDueAt = getDueAt(task);
+  const intervalMs   = getIntervalMs(task);
+  let nextDue = currentDueAt + intervalMs;
+  while (nextDue <= Date.now()) nextDue += intervalMs;
+  task.nextDueAt     = new Date(nextDue).toISOString();
+  task.lastNotified  = null;
+  task.snoozedUntil  = null;
+  writeData(data); scheduleNotification(task); updateHaSensors();
+  res.json({ success: true, task });
+});
+
 router.post('/:id/snooze', (req, res) => {
   const data = readData();
   const task = data.tasks.find(t => t.id === req.params.id);

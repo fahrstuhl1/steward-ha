@@ -1,5 +1,35 @@
 # Changelog
 
+## 1.4.2
+### Bug Fixes
+- **Skip-Route**: `getScheduledDueAt` durch `getDueAt` ersetzt — aufeinanderfolgende Skips ohne zwischenzeitliche Erledigung rückten die Aufgabe nicht weiter vor (blieben beim ersten Skip-Datum stecken)
+- **HA-Raum-Sensor**: Icon-Ternär war invertiert (`room.icon ? '' : 'mdi:door'` → `room.icon || 'mdi:door'`) — konfigurierte Icons wurden verworfen, ikonlose Räume korrekt
+- **Lovelace-Karte**: XSS-Lücke — `title` aus der Karten-Konfiguration wurde ohne Escaping in `innerHTML` eingefügt; `_esc()` wird nun angewendet
+- **Wochentag-Erkennung**: `new Date().getDay()` nutzte System-Timezone des Servers; `Intl.DateTimeFormat` mit konfigurierter App-Timezone wird nun für die Wochenend-Erkennung verwendet
+- **Raum nur wartend**: Räume mit ausschließlich wartenden Aufgaben wurden bei `showDone=false` vollständig aus dem DOM entfernt, obwohl der Button sie im Zähler führte; Räume bleiben nun sichtbar mit einem Hinweis-Text
+- **Legacy-Aufgaben**: `task.notifications?.ha` mit Optional-Chaining abgesichert — fehlende `notifications`-Felder (ältere Backups) führten zu `TypeError` beim Öffnen des Bearbeiten-Modals
+
+---
+
+## 1.4.1
+### Improvements
+- **HA sensor attributes**: `sensor.steward_due`, `sensor.steward_due_soon`, and all user sensors now carry a `tasks` attribute (name, room, assignee, priority, due) — usable in markdown cards, template conditions and automations without a custom card
+- **Per-room sensors**: `sensor.steward_<room-id>_due` created automatically for every configured room
+
+---
+
+## 1.4.0
+### Features
+- **Duplicate task**: Copy button (⧉) on every task card opens the edit modal pre-filled — save creates a new task
+- **Skip occurrence**: Skip button (⏩) on recurring tasks advances to the next scheduled occurrence without recording a completion or awarding points
+- **Weekday-specific notification time**: Optional Mo–Fr and Sa–So time fields in "More options" — overrides the standard notify offset for that day type (e.g. notify at 08:00 on weekdays, 10:00 on weekends)
+- **Lovelace card** (`steward-card.js`): Custom HA dashboard card showing due tasks; filterable by person/room — load via HA resource manager
+
+### Improvements
+- Settings: Timezone moved to its own row — no more cramped three-column layout
+
+---
+
 ## 1.3.1
 ### Improvements
 - **Waiting tasks hidden by default**: Completed recurring tasks no longer clutter the overview. They are now grouped with future tasks and revealed via the existing toggle button.
