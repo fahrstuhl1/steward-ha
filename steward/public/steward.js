@@ -529,7 +529,9 @@ function taskCard(t) {
 async function toggleSubtask(taskId, subId, checkbox) {
   checkbox.disabled = true;
   try {
-    const res = await (await fetch(`api/tasks/${taskId}/subtasks/${subId}/toggle`, { method: 'POST' })).json();
+    const r = await fetch(`api/tasks/${taskId}/subtasks/${subId}/toggle`, { method: 'POST' });
+    const res = await r.json();
+    if (!r.ok || !res.success) throw new Error(res.error || 'Toggle failed');
     const task = tasks.find(t => t.id === taskId);
     const sub  = task?.subtasks?.find(s => s.id === subId);
     if (sub) sub.done = res.done;

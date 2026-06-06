@@ -55,6 +55,20 @@ async function sendEmail(data, userId, subject, text) {
   await t.sendMail({ from: `"Steward 🏠" <${gmailUser}>`, to: user.email, subject: `Steward: ${subject}`, text });
 }
 
+function notifyOthersOnCompletion(data, task, userId) {
+  if (data.settings.completionNotify === false) return;
+  const allUsers = data.settings.users || [];
+  const completer = allUsers.find(u => u.id === userId);
+  const completerName = completer ? completer.name : userId;
+  const others = allUsers.filter(u => u.id !== userId);
+  if (!others.length) return;
+  const msg = `${completerName} completed "${task.name}" ✓`;
+  for (const other of others) {
+    sendHaNotify(data, other.id, '✅ Task done', msg).catch(() => {});
+    sendEmail(data, other.id, task.name, msg).catch(() => {});
+  }
+}
+
 async function fireNotification(taskId) {
   const data = readData();
   const task = data.tasks.find(t => t.id === taskId);
@@ -103,4 +117,4 @@ function restoreTimers() {
   if (n) console.log(`[Schedule] ${n} timers restored`);
 }
 
-module.exports = { pendingTimers, getUser, sendHaNotify, sendEmail, fireNotification, scheduleNotification, restoreTimers };
+module.exports = { pendingTimers, getUser, sendHaNotify, sendEmail, notifyOthersOnCompletion, fireNotification, scheduleNotification, restoreTimers };

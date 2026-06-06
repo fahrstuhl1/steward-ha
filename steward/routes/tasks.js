@@ -4,24 +4,10 @@ const router  = express.Router();
 
 const { readData, writeData, isOnVacation } = require('../lib/data');
 const { INTERVAL_LABELS, getScheduledDueAt, getIntervalMs, getDueAt, isDue, isSoon, nextDueDate, nextDueSerialized } = require('../lib/time');
-const { pendingTimers, scheduleNotification, fireNotification, sendHaNotify, sendEmail } = require('../lib/notifications');
+const { pendingTimers, scheduleNotification, fireNotification, notifyOthersOnCompletion } = require('../lib/notifications');
 const { updateHaSensors } = require('../lib/ha');
 
 const quickPage = (icon, text) => `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{font-family:-apple-system,sans-serif;background:#1a1d27;color:#dde1f0;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;text-align:center;}h1{font-size:3.5rem;margin:0 0 8px;}p{color:#7c819a;font-size:1rem;}</style></head><body><div><h1>${icon}</h1><p>${text}</p></div></body></html>`;
-
-function notifyOthersOnCompletion(data, task, userId) {
-  if (data.settings.completionNotify === false) return;
-  const allUsers = data.settings.users || [];
-  const completer = allUsers.find(u => u.id === userId);
-  const completerName = completer ? completer.name : userId;
-  const others = allUsers.filter(u => u.id !== userId);
-  if (!others.length) return;
-  const msg = `${completerName} completed "${task.name}" ✓`;
-  for (const other of others) {
-    sendHaNotify(data, other.id, '✅ Task done', msg).catch(() => {});
-    sendEmail(data, other.id, task.name, msg).catch(() => {});
-  }
-}
 
 router.get('/', (req, res) => {
   const data   = readData();

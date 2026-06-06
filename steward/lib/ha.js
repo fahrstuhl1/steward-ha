@@ -3,7 +3,7 @@ const http  = require('http');
 const { v4: uuidv4 } = require('uuid');
 const { readData, writeData, isOnVacation } = require('./data');
 const { getScheduledDueAt, getIntervalMs, isDue, isSoon, nextDueDate } = require('./time');
-const { sendHaNotify, sendEmail, scheduleNotification } = require('./notifications');
+const { sendHaNotify, sendEmail, scheduleNotification, notifyOthersOnCompletion } = require('./notifications');
 
 function request(haUrl, haToken, options, body = null) {
   const url = new URL(options.path, haUrl);
@@ -226,6 +226,7 @@ function handleNotificationAction(eventData) {
       if (!data.completions) data.completions = [];
       data.completions.push({ id: uuidv4(), taskId: task.id, taskName: task.name, userId, points, date: task.lastCompleted, comment: null });
     }
+    notifyOthersOnCompletion(data, task, userId);
     if (task.dueDate) {
       if (!data.archive) data.archive = [];
       data.archive.push({ id: uuidv4(), name: task.name, room: task.room, assignee: task.assignee, priority: task.priority || 'normal', dueDate: task.dueDate, dueTime: task.dueTime, completedBy: userId, archivedAt: task.lastCompleted, comment: null });
