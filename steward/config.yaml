@@ -1,5 +1,5 @@
 name: Steward
-version: "1.6.3"
+version: "1.6.4"
 slug: steward
 description: Home Assistant Task Planner — recurring tasks, scheduling, notifications and gamification
 url: https://github.com/fahrstuhl1/steward-ha

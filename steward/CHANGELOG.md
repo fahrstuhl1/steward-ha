@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.6.4
+### Improvements
+- **Fälligkeits-Logik**: `isSoon` (gelb) greift jetzt nur noch wenn die Task am **selben Kalendertag** fällig ist — kein 12h-Fenster-Bleed-over mehr in den Vortag
+- **Grace Period**: Task wird erst **1 Stunde nach** der Fälligkeit rot — zwischen 09:00 und 10:00 bleibt sie gelb
+- **Timezone-aware**: Kalender-Tag-Vergleich nutzt die konfigurierte App-Timezone (statt fester UTC-Grenze)
+- **Konsistent**: Alle Aufrufe in Tasks-Route, HA-Sensoren, Cron und Lovelace-Karte nutzen dieselbe Logik
+
+---
+
 ## 1.6.3
 ### Improvements
 - **Wartend-Sektion**: Task-Namen werden als Chips angezeigt statt nur einem grauen Zähltext — Rauminhalt auf einen Blick sichtbar ohne Aufklappen

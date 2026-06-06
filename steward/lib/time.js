@@ -57,22 +57,33 @@ function getNotifyAt(task, timezone) {
   return base;
 }
 
-function isDue(task) {
+const GRACE_MS = 3600000; // 1 hour grace before a task turns red
+
+function calendarDateStr(ms, timezone) {
+  const tz = timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+  return new Date(ms).toLocaleDateString('en-CA', { timeZone: tz }); // YYYY-MM-DD
+}
+
+function isDue(task, timezone) {
   const now = Date.now();
+  const dueAt = getDueAt(task);
   if (task.dueDate) {
-    const dueAt = getDueAt(task);
     if (task.lastCompleted && new Date(task.lastCompleted).getTime() >= dueAt) return false;
-    return now >= dueAt;
   }
-  return now >= getDueAt(task);
+  return now >= dueAt + GRACE_MS;
 }
 
-function isSoon(task) {
-  if (isDue(task)) return false;
-  return (getDueAt(task) - Date.now()) <= 12 * 3600000;
+function isSoon(task, timezone) {
+  if (isDue(task, timezone)) return false;
+  const now = Date.now();
+  const dueAt = getDueAt(task);
+  // Within grace period (past due time but not yet red) → still yellow
+  if (now >= dueAt) return true;
+  // Due today (same calendar day in the configured timezone) → yellow
+  return calendarDateStr(now, timezone) === calendarDateStr(dueAt, timezone);
 }
 
-function nextDueDate(task) {
+function nextDueDate(task, timezone) {
   const dueAt   = getDueAt(task);
   const now     = Date.now();
   const timeStr = task.dueTime ? ` at ${task.dueTime}` : '';
@@ -84,14 +95,14 @@ function nextDueDate(task) {
     return `${new Date(dueAt).toLocaleDateString('en-GB')}${timeStr}`;
   }
   if (now >= dueAt)           return `Due now${timeStr}`;
-  const msLeft = dueAt - now;
-  if (msLeft <= 12 * 3600000) return `Today${timeStr}`;
-  const diff = Math.ceil(msLeft / 86400000);
+  const sameDay = calendarDateStr(now, timezone) === calendarDateStr(dueAt, timezone);
+  if (sameDay)                return `Today${timeStr}`;
+  const diff = Math.ceil((dueAt - now) / 86400000);
   if (diff === 1)             return `Tomorrow${timeStr}`;
   return `In ${diff} days${timeStr}`;
 }
 
-function nextDueSerialized(task) {
+function nextDueSerialized(task, timezone) {
   const dueAt = getDueAt(task);
   const now   = Date.now();
   const time  = task.dueTime || null;
@@ -104,9 +115,9 @@ function nextDueSerialized(task) {
     return { key: 'due.date', date: new Date(dueAt).toLocaleDateString('en-GB'), time };
   }
   if (now >= dueAt)           return { key: 'due.now',     time };
-  const msLeft = dueAt - now;
-  if (msLeft <= 12 * 3600000) return { key: 'due.today',   time };
-  const diff = Math.ceil(msLeft / 86400000);
+  const sameDay = calendarDateStr(now, timezone) === calendarDateStr(dueAt, timezone);
+  if (sameDay)                return { key: 'due.today',   time };
+  const diff = Math.ceil((dueAt - now) / 86400000);
   if (diff === 1)             return { key: 'due.tomorrow', time };
   return { key: 'due.in_days', days: diff, time };
 }
