@@ -442,7 +442,7 @@ function taskCard(t) {
 
   return `<div class="task-card ${cardClass}" data-id="${t.id}">
     <button class="check-btn" onclick="toggleComplete('${t.id}')">${checkIcon}</button>
-    <div class="task-info">
+    <div class="task-info" onclick="openEditModal('${t.id}')" style="cursor:pointer">
       <div class="task-name">${priorityDot}${t.name}</div>
       <div class="task-meta">${badgeHtml}<span class="meta-dot">·</span><span class="meta-text">${intervalLabel}</span><span class="meta-dot">·</span>${waitingLabel}${notifyHint}</div>
       ${snoozeHint}${commentLine}
