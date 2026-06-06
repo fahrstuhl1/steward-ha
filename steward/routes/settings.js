@@ -4,7 +4,7 @@ const router  = express.Router();
 
 const { readData, writeData, migrateData } = require('../lib/data');
 const { pendingTimers, restoreTimers } = require('../lib/notifications');
-const { updateHaSensors, fetchHaStates, startHaEventSubscription } = require('../lib/ha');
+const { updateHaSensors, fetchHaStates, fetchHaConfig, startHaEventSubscription } = require('../lib/ha');
 
 router.get('/settings', (req, res) => {
   const data = readData();
@@ -111,6 +111,14 @@ router.post('/test-ha', async (req, res) => {
     return res.status(500).json({ error: `HA responded with ${result.statusCode}: ${result.body}` });
   }
   res.json({ success: true });
+});
+
+router.get('/sync-timezone', async (req, res) => {
+  const data   = readData();
+  const config = await fetchHaConfig(data);
+  if (!config) return res.status(500).json({ error: 'HA unreachable or not configured' });
+  if (!config.time_zone) return res.status(500).json({ error: 'No timezone in HA config' });
+  res.json({ timezone: config.time_zone });
 });
 
 router.get('/ha-entities', (req, res) => {

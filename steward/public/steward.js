@@ -965,6 +965,14 @@ async function handleImport(input) {
   } else { alert('Import failed: ' + result.error); }
 }
 
+function showNotification(msg, isError = false) {
+  const el = document.createElement('div');
+  el.style.cssText = `position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:${isError ? 'var(--red)' : 'var(--green)'};color:#fff;padding:9px 18px;border-radius:20px;font-size:0.84rem;font-weight:500;z-index:600;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,0.25);pointer-events:none;`;
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+
 // ── Haptic & animation helpers ──────────────────────────────────────────────
 function vibrate(pattern) { if (navigator.vibrate) navigator.vibrate(pattern); }
 

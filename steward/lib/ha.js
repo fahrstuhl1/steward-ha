@@ -49,21 +49,26 @@ async function updateHaSensors() {
   const users = data.settings.users || [];
   const rooms = data.settings.rooms || [];
 
-  const dueTasks  = tasks.filter(t => isDue(t));
-  const soonTasks = tasks.filter(t => !isDue(t) && isSoon(t));
+  const nowDate = new Date();
+  const vacFrom = data.settings.vacationFrom ? new Date(data.settings.vacationFrom) : null;
+  const vacTo   = data.settings.vacationTo   ? new Date(data.settings.vacationTo + 'T23:59:59') : null;
+  const onVacation = vacFrom && vacTo && nowDate >= vacFrom && nowDate <= vacTo;
+
+  const dueTasks  = onVacation ? [] : tasks.filter(t => isDue(t));
+  const soonTasks = onVacation ? [] : tasks.filter(t => !isDue(t) && isSoon(t));
 
   await setHaState(data, 'sensor.steward_due',      dueTasks.length,  { friendly_name: 'Steward Due',      icon: 'mdi:clipboard-list',       tasks: taskAttrs(dueTasks) });
   await setHaState(data, 'sensor.steward_due_soon', soonTasks.length, { friendly_name: 'Steward Due Soon', icon: 'mdi:clock-alert-outline',  tasks: taskAttrs(soonTasks) });
 
   for (const user of users) {
-    const userDue = tasks.filter(t => (t.assignee === user.id || t.assignee === 'alle') && isDue(t));
+    const userDue = onVacation ? [] : tasks.filter(t => (t.assignee === user.id || t.assignee === 'alle') && isDue(t));
     await setHaState(data, `sensor.steward_${user.id}_due`, userDue.length, {
       friendly_name: `Steward ${user.name} Due`, icon: 'mdi:account-check', tasks: taskAttrs(userDue)
     });
   }
 
   for (const room of rooms) {
-    const roomDue = tasks.filter(t => (t.room || 'general') === room.id && isDue(t));
+    const roomDue = onVacation ? [] : tasks.filter(t => (t.room || 'general') === room.id && isDue(t));
     await setHaState(data, `sensor.steward_${room.id}_due`, roomDue.length, {
       friendly_name: `Steward ${room.name || room.id} Due`, icon: room.icon || 'mdi:door', tasks: taskAttrs(roomDue)
     });
@@ -74,6 +79,14 @@ async function fetchHaStates(data, timeoutMs = 10000) {
   const { haUrl, haToken } = data.settings;
   if (!haUrl || !haToken) return null;
   const result = await request(haUrl, haToken, { path: '/api/states', timeout: timeoutMs });
+  if (!result) return null;
+  try { return JSON.parse(result.body); } catch(e) { return null; }
+}
+
+async function fetchHaConfig(data, timeoutMs = 10000) {
+  const { haUrl, haToken } = data.settings;
+  if (!haUrl || !haToken) return null;
+  const result = await request(haUrl, haToken, { path: '/api/config', timeout: timeoutMs });
   if (!result) return null;
   try { return JSON.parse(result.body); } catch(e) { return null; }
 }
@@ -97,6 +110,7 @@ async function checkHaTriggers() {
     const current = entity.state;
 
     if (current === trigger.toState && trigger.lastState !== trigger.toState) {
+      const todayStr = new Date().toISOString().slice(0, 10);
       const task = {
         id: uuidv4(),
         name:               trigger.taskName || entity.attributes.friendly_name || trigger.entityId,
@@ -104,7 +118,7 @@ async function checkHaTriggers() {
         room:               trigger.room     || 'general',
         interval:           'once', intervalCustomDays: null, scheduleMode: 'strict', priority: 'normal',
         createdAt:          new Date().toISOString(),
-        startDate: null, dueDate: null, nextDueAt: null,
+        startDate: null, dueDate: todayStr, nextDueAt: null,
         dueTime:            trigger.dueTime  || null,
         notifyOffset:       trigger.notifyOffset != null ? Number(trigger.notifyOffset) : 0,
         snoozedUntil: null, lastComment: null, lastCompleted: null, completedBy: null, lastNotified: null,
@@ -233,4 +247,4 @@ function handleNotificationAction(eventData) {
   }
 }
 
-module.exports = { setHaState, updateHaSensors, fetchHaStates, checkHaTriggers, startHaEventSubscription, stopHaEventSubscription };
+module.exports = { setHaState, updateHaSensors, fetchHaStates, fetchHaConfig, checkHaTriggers, startHaEventSubscription, stopHaEventSubscription };
