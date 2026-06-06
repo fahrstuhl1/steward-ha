@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.6.7
+### Improvements
+- **Lovelace Card: Aufgaben direkt abhaken** — neues optionales Config-Feld `complete_as: <userId>`; zeigt pro Task-Zeile einen ✓-Button, der die Aufgabe ohne Öffnen der Steward-UI als erledigt markiert; fällt auf `filter.person` zurück wenn `complete_as` nicht gesetzt ist
+
+---
+
 ## 1.6.6
 ### Improvements
 - **Einzel-Benachrichtigungs-Toggle**: Pro Aufgabe gibt es jetzt nur noch einen „Notify"-Toggle (an/aus, Standard: an) statt separater HA- und E-Mail-Checkboxen — welche Kanäle genutzt werden, bestimmt allein die Nutzerkonfiguration
