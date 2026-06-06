@@ -36,7 +36,19 @@ function getDueAt(task) {
 }
 
 function getNotifyAt(task) {
-  const base = getDueAt(task) - (task.notifyOffset != null ? Number(task.notifyOffset) : 0) * 60000;
+  const dueAt = getDueAt(task);
+  let base = dueAt - (task.notifyOffset != null ? Number(task.notifyOffset) : 0) * 60000;
+  if (task.notifyTimeWeekday || task.notifyTimeWeekend) {
+    const day = new Date(dueAt).getDay();
+    const isWeekend = day === 0 || day === 6;
+    const timeStr = isWeekend ? task.notifyTimeWeekend : task.notifyTimeWeekday;
+    if (timeStr) {
+      const d = new Date(dueAt);
+      const [h, m] = timeStr.split(':').map(Number);
+      d.setHours(h, m, 0, 0);
+      base = d.getTime();
+    }
+  }
   if (task.snoozedUntil) {
     const snoozeEnd = new Date(task.snoozedUntil).getTime();
     if (snoozeEnd > Date.now()) return Math.max(base, snoozeEnd);

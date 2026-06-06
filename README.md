@@ -1,5 +1,5 @@
 # 🏠 Steward — Home Assistant Add-on Repository
-![Version](https://img.shields.io/badge/version-1.3.1-blue?style=flat-square)
+![Version](https://img.shields.io/badge/version-1.4.0-blue?style=flat-square)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![HACS](https://img.shields.io/badge/HACS-Custom%20Repository-orange?style=flat-square)](https://hacs.xyz)
 
@@ -40,6 +40,8 @@ Further configuration (users, rooms, HA triggers, addon URL) is done inside the 
 - Complete a task on behalf of another household member
 - **Undo** — 5-second toast after completing a task to undo it
 - **Waiting state** — completed recurring tasks are hidden by default; the toggle button shows their count (e.g. "Show waiting (3) & future") and reveals them on tap
+- **Duplicate** — copy any task into the edit modal with one tap (⧉ button)
+- **Skip occurrence** — advance a recurring task to its next scheduled date without recording a completion (⏩ button)
 
 ### Due Status Colors
 | Color | Meaning |
@@ -53,6 +55,20 @@ Further configuration (users, rooms, HA triggers, addon URL) is done inside the 
 - Unlimited users with name, color, email and HA notify service
 - Import users directly from HA `person.*` entities
 - Tasks of deleted users are automatically reassigned to "All"
+
+### Lovelace Card
+Add Steward due tasks directly to your HA dashboard:
+1. Load `steward-card.js` as a resource in **Settings → Dashboards → Resources** (type: JavaScript module)
+   URL: `http://<ha-ip>:3456/steward-card.js`
+2. Add to a dashboard:
+```yaml
+type: custom:steward-task-card
+url: http://<ha-ip>:3456
+title: Tasks          # optional
+filter:
+  person: user1       # optional
+  room: kitchen       # optional
+```
 
 ### Notifications
 - **Home Assistant** — push via HA Companion App with action buttons

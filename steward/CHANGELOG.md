@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.4.0
+### Features
+- **Duplicate task**: Copy button (⧉) on every task card opens the edit modal pre-filled — save creates a new task
+- **Skip occurrence**: Skip button (⏩) on recurring tasks advances to the next scheduled occurrence without recording a completion or awarding points
+- **Weekday-specific notification time**: Optional Mo–Fr and Sa–So time fields in "More options" — overrides the standard notify offset for that day type (e.g. notify at 08:00 on weekdays, 10:00 on weekends)
+- **Lovelace card** (`steward-card.js`): Custom HA dashboard card showing due tasks; filterable by person/room — load via HA resource manager
+
+### Improvements
+- Settings: Timezone moved to its own row — no more cramped three-column layout
+
+---
+
 ## 1.3.1
 ### Improvements
 - **Waiting tasks hidden by default**: Completed recurring tasks no longer clutter the overview. They are now grouped with future tasks and revealed via the existing toggle button.
