@@ -6,6 +6,7 @@
 - **Kontext-Menü**: Kacheln haben jetzt einen `···`-Button der ein Kontext-Menü öffnet (Bearbeiten, Zurückstellen, Termin überspringen, Duplizieren, Löschen) — kein visuelles Chaos mit 5 Buttons pro Kachel mehr
 - **Undo für Löschen**: Löschen zeigt einen 5-Sekunden-Toast mit "Rückgängig"-Option statt sofort irreversibel zu löschen
 - **Einstellungen mit Tabs**: Einstellungs-Modal in 4 Tabs aufgeteilt (Allgemein / Nutzer & Räume / HA / Backup) statt einem langen Scroll
+- **Ladeindikator**: Speicher-Buttons (Aufgabe, Einstellungen) werden während des Speicherns deaktiviert und zeigen `…`; Haken-Button auf der Kachel wird während des Abschlusses deaktiviert; Zurückstellen/Überspringen sind gegen Doppel-Aufrufe abgesichert
 
 ---
 

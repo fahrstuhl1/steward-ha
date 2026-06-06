@@ -79,6 +79,12 @@ function initModalDrag() {
   }, {passive: true});
 }
 
+function btnLoading(btn, loading) {
+  if (!btn) return;
+  if (loading) { btn.disabled = true; btn.dataset.origHtml = btn.innerHTML; btn.innerHTML = '<span style="opacity:0.45">…</span>'; }
+  else { btn.disabled = false; if (btn.dataset.origHtml !== undefined) { btn.innerHTML = btn.dataset.origHtml; delete btn.dataset.origHtml; } }
+}
+
 let swipeStartX=0, swipeStartY=0, swipeTaskId=null, swipeActive=false;
 function initSwipe() {
   const container = document.getElementById('taskMain');
@@ -496,33 +502,50 @@ async function toggleComplete(id) {
     document.getElementById('commentModal').classList.add('open');
     setTimeout(()=>document.getElementById('commentInput').focus(), 300);
   } else {
-    await fetch(`api/tasks/${id}/reset`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId}) });
-    await loadTasks();
+    const checkBtn = document.querySelector(`[data-id="${id}"] .check-btn`);
+    btnLoading(checkBtn, true);
+    try {
+      await fetch(`api/tasks/${id}/reset`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId}) });
+      await loadTasks();
+    } finally { btnLoading(checkBtn, false); }
   }
 }
 
 async function submitComment(save) {
   document.getElementById('commentModal').classList.remove('open');
   if (!pendingCompleteId) return;
+  const checkBtn = document.querySelector(`[data-id="${pendingCompleteId}"] .check-btn`);
+  btnLoading(checkBtn, true);
   const comment = save ? document.getElementById('commentInput').value.trim() : null;
   const userId  = document.getElementById('completedBySelect').value || pendingCompleteUserId;
-  await fetch(`api/tasks/${pendingCompleteId}/complete`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ userId, comment }) });
-  const completedId = pendingCompleteId;
-  const completedName = tasks.find(t=>t.id===completedId)?.name || '';
-  pendingCompleteId = null; pendingCompleteUserId = null;
-  await loadTasks();
-  lastCompletedId = completedId;
-  showUndoToast(completedName);
+  try {
+    await fetch(`api/tasks/${pendingCompleteId}/complete`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ userId, comment }) });
+    const completedId = pendingCompleteId;
+    const completedName = tasks.find(t=>t.id===completedId)?.name || '';
+    pendingCompleteId = null; pendingCompleteUserId = null;
+    await loadTasks();
+    lastCompletedId = completedId;
+    showUndoToast(completedName);
+  } finally { btnLoading(checkBtn, false); }
 }
 
+let actionInProgress = false;
 async function snoozeTask(id) {
-  await fetch(`api/tasks/${id}/snooze`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({hours:2}) });
-  await loadTasks();
+  if (actionInProgress) return;
+  actionInProgress = true;
+  try {
+    await fetch(`api/tasks/${id}/snooze`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({hours:2}) });
+    await loadTasks();
+  } finally { actionInProgress = false; }
 }
 
 async function skipTask(id) {
-  await fetch(`api/tasks/${id}/skip`, { method:'POST' });
-  await loadTasks();
+  if (actionInProgress) return;
+  actionInProgress = true;
+  try {
+    await fetch(`api/tasks/${id}/skip`, { method:'POST' });
+    await loadTasks();
+  } finally { actionInProgress = false; }
 }
 
 function duplicateTask(id) {
@@ -718,9 +741,13 @@ async function saveTask() {
     notifications: { ha: document.getElementById('notifHa').checked, email: document.getElementById('notifEmail').checked }
   };
   if(!body.name) { alert(L('alert.no_name')); return; }
-  await fetch(editingTaskId ? `api/tasks/${editingTaskId}` : 'api/tasks', { method: editingTaskId?'PUT':'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
-  closeTaskModal();
-  await loadTasks();
+  const saveBtn = document.querySelector('#taskModal .btn-primary');
+  btnLoading(saveBtn, true);
+  try {
+    await fetch(editingTaskId ? `api/tasks/${editingTaskId}` : 'api/tasks', { method: editingTaskId?'PUT':'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    closeTaskModal();
+    await loadTasks();
+  } finally { btnLoading(saveBtn, false); }
 }
 
 function renderUserList() {
@@ -858,10 +885,14 @@ async function saveSettings() {
     gmailAppPassword:   document.getElementById('gmailPass').value,
     ...(haTokenVal ? {haToken: haTokenVal} : {})
   };
-  await fetch('api/settings', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
-  closeSettings();
-  await loadSettings();
-  render();
+  const saveBtn = document.querySelector('#settingsModal .btn-primary');
+  btnLoading(saveBtn, true);
+  try {
+    await fetch('api/settings', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    closeSettings();
+    await loadSettings();
+    render();
+  } finally { btnLoading(saveBtn, false); }
 }
 
 ['taskModal','settingsModal','commentModal'].forEach(id => {
