@@ -128,7 +128,7 @@ main { max-width: 640px; margin: 0 auto; padding: 16px 14px 60px; }
 .task-actions { display: flex; gap: 1px; flex-shrink: 0; opacity: 0.35; transition: opacity 0.1s; }
 .task-card:hover .task-actions { opacity: 1; }
 @media (hover: none) { .task-actions { opacity: 1; } }
-.task-action-btn { background: none; border: none; cursor: pointer; color: var(--text3); padding: 3px 7px; border-radius: 5px; font-size: 0.75rem; transition: color 0.1s, background 0.1s; }
+.task-action-btn { background: none; border: none; cursor: pointer; color: var(--text3); padding: 8px 10px; border-radius: 5px; font-size: 0.75rem; transition: color 0.1s, background 0.1s; min-height: 36px; }
 .task-action-btn:hover { color: var(--text); background: var(--surface2); }
 .show-done-btn { width: 100%; padding: 7px; margin-top: 12px; background: none; border: 1px solid var(--border); border-radius: var(--r-sm); color: var(--text3); font-size: 0.76rem; cursor: pointer; transition: all 0.12s; }
 .show-done-btn:hover { border-color: var(--border2); color: var(--text2); }

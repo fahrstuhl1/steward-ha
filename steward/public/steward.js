@@ -5,7 +5,7 @@ let statsData=null, statsPeriod='week';
 let gamificationEnabled=true, searchOpen=false, calendarOpen=false;
 let planningOpen=false, archiveOpen=false, planningDays=7;
 let calYear=new Date().getFullYear(), calMonth=new Date().getMonth(), calSelectedDay=null;
-let vacationActive=false, pendingPhoto=null, wasLongPress=false;
+let vacationActive=false, vacationToDate=null, pendingPhoto=null, wasLongPress=false;
 
 const PRIORITY_ORDER = { high:0, normal:1, low:2 };
 
@@ -194,7 +194,8 @@ async function loadStats() {
 
 async function loadTasks() {
   const res = await fetch('api/tasks');
-  vacationActive = res.headers.get('X-Vacation-Active') === 'true';
+  vacationActive  = res.headers.get('X-Vacation-Active') === 'true';
+  vacationToDate  = res.headers.get('X-Vacation-To') || null;
   tasks = await res.json();
   render();
 }
@@ -417,6 +418,14 @@ function render() {
   renderTasks();
   const banner = document.getElementById('vacationBanner');
   banner.style.display = vacationActive ? '' : 'none';
+  if (vacationActive && vacationToDate) {
+    const d = new Date(vacationToDate + 'T23:59:59');
+    const lang = document.documentElement.lang === 'de' ? 'de-DE' : 'en-GB';
+    document.getElementById('vacationBannerSub').textContent =
+      ' · ' + L('vacation.banner') + ' ' + d.toLocaleDateString(lang, {day:'numeric', month:'short'});
+  } else {
+    document.getElementById('vacationBannerSub').textContent = '';
+  }
 }
 
 function renderHeader() {
@@ -544,7 +553,11 @@ async function submitComment(save) {
     lastCompletedId = completedId;
     showUndoToast(completedName);
     vibrate([50, 30, 50]);
-    if (rect) spawnConfetti(rect.left + rect.width / 2, rect.top + rect.height / 2);
+    if (rect) {
+      const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+      spawnPulseRing(cx, cy);
+      spawnConfetti(cx, cy);
+    }
   } finally { btnLoading(checkBtn, false); }
 }
 
@@ -975,6 +988,13 @@ function showNotification(msg, isError = false) {
 
 // ── Haptic & animation helpers ──────────────────────────────────────────────
 function vibrate(pattern) { if (navigator.vibrate) navigator.vibrate(pattern); }
+
+function spawnPulseRing(x, y) {
+  const ring = document.createElement('div');
+  ring.style.cssText = `position:fixed;left:${x}px;top:${y}px;width:36px;height:36px;border-radius:50%;border:2.5px solid rgba(74,222,128,0.7);transform:translate(-50%,-50%);pointer-events:none;z-index:9999;animation:checkPulse 0.55s ease-out forwards;`;
+  document.body.appendChild(ring);
+  ring.addEventListener('animationend', () => ring.remove());
+}
 
 function spawnConfetti(x, y) {
   const colors = ['#5b9cf6','#f472b6','#a78bfa','#34d399','#fb923c','#f87171'];

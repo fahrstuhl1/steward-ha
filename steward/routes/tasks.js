@@ -15,7 +15,10 @@ router.get('/', (req, res) => {
   const vacFrom = data.settings.vacationFrom ? new Date(data.settings.vacationFrom) : null;
   const vacTo   = data.settings.vacationTo   ? new Date(data.settings.vacationTo + 'T23:59:59') : null;
   const onVacation = vacFrom && vacTo && nowDate >= vacFrom && nowDate <= vacTo;
-  if (onVacation) res.setHeader('X-Vacation-Active', 'true');
+  if (onVacation) {
+    res.setHeader('X-Vacation-Active', 'true');
+    res.setHeader('X-Vacation-To', data.settings.vacationTo);
+  }
   res.json(data.tasks.map(t => ({
     ...t,
     isDue:        onVacation ? false : isDue(t),

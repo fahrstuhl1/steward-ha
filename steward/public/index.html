@@ -180,10 +180,10 @@
         </div>
       </div>
       <div class="form-group">
-        <label>Notification channel</label>
+        <label data-i18n="label.notify_channel">Notification channel</label>
         <div class="toggle-stack">
-          <label class="toggle-row"><input type="checkbox" id="notifHa" /><span class="toggle-track"></span><div class="toggle-text"><div class="toggle-label">Home Assistant</div><div class="toggle-desc">Push via HA Companion App</div></div></label>
-          <label class="toggle-row"><input type="checkbox" id="notifEmail" /><span class="toggle-track"></span><div class="toggle-text"><div class="toggle-label">Email</div><div class="toggle-desc">Reminder via email</div></div></label>
+          <label class="toggle-row"><input type="checkbox" id="notifHa" /><span class="toggle-track"></span><div class="toggle-text"><div class="toggle-label">Home Assistant</div><div class="toggle-desc" data-i18n="desc.notify_ha">Push via HA Companion App</div></div></label>
+          <label class="toggle-row"><input type="checkbox" id="notifEmail" /><span class="toggle-track"></span><div class="toggle-text"><div class="toggle-label">Email</div><div class="toggle-desc" data-i18n="desc.notify_email">Reminder via email</div></div></label>
         </div>
       </div>
     </div>
@@ -231,7 +231,8 @@
     <div class="form-group">
       <label data-i18n="nlp.label">Describe your task</label>
       <input type="text" id="nlpInput" class="nlp-input" data-i18n-placeholder="nlp.placeholder"
-        placeholder="e.g. Water plants every Friday" oninput="updateNlpTags()" onkeydown="if(event.key==='Enter')submitNlp()" />
+        placeholder="e.g. Water plants every Friday" autocomplete="off" autocorrect="off" spellcheck="false"
+        oninput="updateNlpTags()" onkeydown="if(event.key==='Enter')submitNlp()" />
     </div>
     <div class="nlp-tags" id="nlpTags"></div>
     <div class="modal-actions">
