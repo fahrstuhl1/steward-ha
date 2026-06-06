@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.4.1
+### Improvements
+- **HA sensor attributes**: `sensor.steward_due`, `sensor.steward_due_soon`, and all user sensors now carry a `tasks` attribute (name, room, assignee, priority, due) — usable in markdown cards, template conditions and automations without a custom card
+- **Per-room sensors**: `sensor.steward_<room-id>_due` created automatically for every configured room
+
+---
+
 ## 1.4.0
 ### Features
 - **Duplicate task**: Copy button (⧉) on every task card opens the edit modal pre-filled — save creates a new task

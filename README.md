@@ -1,5 +1,5 @@
 # 🏠 Steward — Home Assistant Add-on Repository
-![Version](https://img.shields.io/badge/version-1.4.0-blue?style=flat-square)
+![Version](https://img.shields.io/badge/version-1.4.1-blue?style=flat-square)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![HACS](https://img.shields.io/badge/HACS-Custom%20Repository-orange?style=flat-square)](https://hacs.xyz)
 
@@ -56,18 +56,53 @@ Further configuration (users, rooms, HA triggers, addon URL) is done inside the 
 - Import users directly from HA `person.*` entities
 - Tasks of deleted users are automatically reassigned to "All"
 
+### HA Sensor Entities
+All sensors carry a `tasks` attribute with the full task list — usable in standard HA cards and automations.
+
+**Available sensors:**
+| Entity | State | `tasks` attribute |
+|---|---|---|
+| `sensor.steward_due` | # overdue | all overdue tasks |
+| `sensor.steward_due_soon` | # due soon | tasks due within 12h |
+| `sensor.steward_<user-id>_due` | # overdue for user | overdue tasks for that user |
+| `sensor.steward_<room-id>_due` | # overdue in room | overdue tasks in that room |
+
+Each task in the `tasks` attribute has: `name`, `room`, `assignee`, `priority`, `due`.
+
+**Markdown card example:**
+```yaml
+type: markdown
+title: Due Tasks
+content: >
+  {% set tasks = state_attr('sensor.steward_due', 'tasks') %}
+  {% if tasks %}
+  {% for t in tasks %}
+  - **{{ t.name }}** · {{ t.room }}
+  {% endfor %}
+  {% else %}
+  All done ✓
+  {% endif %}
+```
+
+**Automation condition example:**
+```yaml
+condition: template
+value_template: >
+  {{ state_attr('sensor.steward_due', 'tasks')
+     | selectattr('room', 'eq', 'kitchen') | list | count > 0 }}
+```
+
 ### Lovelace Card
-Add Steward due tasks directly to your HA dashboard:
-1. Load `steward-card.js` as a resource in **Settings → Dashboards → Resources** (type: JavaScript module)
-   URL: `http://<ha-ip>:3456/steward-card.js`
-2. Add to a dashboard:
+For a styled card without templates, load `steward-card.js` as a resource:
+**Settings → Dashboards → Resources** → add URL `http://<ha-ip>:3456/steward-card.js` (type: JavaScript module)
+
 ```yaml
 type: custom:steward-task-card
 url: http://<ha-ip>:3456
 title: Tasks          # optional
 filter:
-  person: user1       # optional
-  room: kitchen       # optional
+  person: user1       # optional — assignee id
+  room: kitchen       # optional — room id
 ```
 
 ### Notifications
