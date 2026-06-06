@@ -61,6 +61,14 @@ function migrateData(data) {
     changed = true;
   }
 
+  for (const task of data.tasks) {
+    if (task.notifications !== undefined && task.notify === undefined) {
+      task.notify = !!(task.notifications.ha || task.notifications.email);
+      delete task.notifications;
+      changed = true;
+    }
+  }
+
   if (changed) atomicWrite(data);
   return data;
 }

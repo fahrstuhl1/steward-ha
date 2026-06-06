@@ -122,7 +122,7 @@ async function checkHaTriggers() {
         dueTime:            trigger.dueTime  || null,
         notifyOffset:       trigger.notifyOffset != null ? Number(trigger.notifyOffset) : 0,
         snoozedUntil: null, lastComment: null, lastCompleted: null, completedBy: null, lastNotified: null,
-        notifications:      trigger.notifications || { email: false, ha: true }
+        notify:             trigger.notify !== false
       };
       data.tasks.push(task);
       console.log(`[HA Trigger] "${task.name}" fired by ${trigger.entityId} → ${current}`);
@@ -132,8 +132,8 @@ async function checkHaTriggers() {
       const timeStr  = task.dueTime ? ` at ${task.dueTime}` : '';
       const msg      = `"${task.name}" is due${timeStr}`;
       for (const userId of targets) {
-        if (task.notifications.ha)    await sendHaNotify(data, userId, '🏠 New task', msg);
-        if (task.notifications.email) { try { await sendEmail(data, userId, task.name, msg); } catch(e) {} }
+        await sendHaNotify(data, userId, '🏠 New task', msg);
+        try { await sendEmail(data, userId, task.name, msg); } catch(e) {}
       }
       task.lastNotified = new Date().toISOString();
     }

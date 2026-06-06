@@ -46,7 +46,7 @@ router.post('/', (req, res) => {
     notifyOffset:       req.body.notifyOffset != null ? Number(req.body.notifyOffset) : 0,
     snoozedUntil: null, lastComment: null,
     lastCompleted: null, completedBy: null, lastNotified: null,
-    notifications: req.body.notifications || { email: false, ha: true }
+    notify: req.body.notify !== false
   };
   data.tasks.push(task); writeData(data); scheduleNotification(task); updateHaSensors();
   res.json(task);

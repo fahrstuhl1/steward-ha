@@ -168,8 +168,7 @@
       <div class="form-group">
         <label data-i18n="label.notify_channel">Notifications</label>
         <div class="toggle-stack">
-          <label class="toggle-row"><input type="checkbox" id="notifHa" onchange="updateNotifyVisibility()" /><span class="toggle-track"></span><div class="toggle-text"><div class="toggle-label">Home Assistant</div><div class="toggle-desc" data-i18n="desc.notify_ha">Push via HA Companion App</div></div></label>
-          <label class="toggle-row"><input type="checkbox" id="notifEmail" onchange="updateNotifyVisibility()" /><span class="toggle-track"></span><div class="toggle-text"><div class="toggle-label">Email</div><div class="toggle-desc" data-i18n="desc.notify_email">Reminder via email</div></div></label>
+          <label class="toggle-row"><input type="checkbox" id="notifEnabled" checked onchange="updateNotifyVisibility()" /><span class="toggle-track"></span><div class="toggle-text"><div class="toggle-label" data-i18n="label.notify_enabled">Notify</div><div class="toggle-desc" data-i18n="desc.notify_enabled">Send reminders via configured channels</div></div></label>
         </div>
       </div>
       <div id="notifyTimingSection">

@@ -13,7 +13,7 @@ cron.schedule('*/15 * * * *', async () => {
   const now = Date.now();
 
   for (const task of data.tasks) {
-    if (!task.notifications.email && !task.notifications.ha) continue;
+    if (task.notify === false) continue;
     if (task.snoozedUntil && new Date(task.snoozedUntil).getTime() > now) continue;
 
     const cycleStart      = task.lastCompleted ? new Date(task.lastCompleted).getTime() : 0;
@@ -26,8 +26,8 @@ cron.schedule('*/15 * * * *', async () => {
       const soon     = task.notifyOffset && task.notifyOffset > 0;
       const msg      = `"${task.name}" is${soon ? ' almost' : ''} due${timeStr}`;
       for (const userId of targets) {
-        if (task.notifications.ha)    await sendHaNotify(data, userId, '🏠 Task due', msg, task.id);
-        if (task.notifications.email) { try { await sendEmail(data, userId, task.name, msg); } catch(e) {} }
+        await sendHaNotify(data, userId, '🏠 Task due', msg, task.id);
+        try { await sendEmail(data, userId, task.name, msg); } catch(e) {}
       }
       task.lastNotified = new Date().toISOString();
       changed = true;
@@ -41,8 +41,8 @@ cron.schedule('*/15 * * * *', async () => {
         const msg      = `⚠️ Still pending: "${task.name}"${timeStr}`;
         console.log(`[Notify] Repeat: ${msg}`);
         for (const userId of targets) {
-          if (task.notifications.ha)    await sendHaNotify(data, userId, '🏠 Reminder', msg, task.id);
-          if (task.notifications.email) { try { await sendEmail(data, userId, task.name, msg); } catch(e) {} }
+          await sendHaNotify(data, userId, '🏠 Reminder', msg, task.id);
+          try { await sendEmail(data, userId, task.name, msg); } catch(e) {}
         }
         task.lastNotified = new Date().toISOString();
         changed = true;

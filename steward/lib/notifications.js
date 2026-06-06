@@ -68,15 +68,15 @@ async function fireNotification(taskId) {
   const msg      = `"${task.name}" is${soon ? ' almost' : ''} due${timeStr}`;
   console.log(`[Notify] ${msg}`);
   for (const userId of targets) {
-    if (task.notifications.ha)    await sendHaNotify(data, userId, '🏠 Task due', msg, task.id);
-    if (task.notifications.email) { try { await sendEmail(data, userId, task.name, msg); } catch(e) { console.error(e.message); } }
+    await sendHaNotify(data, userId, '🏠 Task due', msg, task.id);
+    try { await sendEmail(data, userId, task.name, msg); } catch(e) { /* unconfigured */ }
   }
   task.lastNotified = new Date().toISOString();
   writeData(data);
 }
 
 function scheduleNotification(task) {
-  if (!task.notifications.email && !task.notifications.ha) return;
+  if (task.notify === false) return;
   if (pendingTimers[task.id]) { clearTimeout(pendingTimers[task.id]); delete pendingTimers[task.id]; }
   const notifyAt = getNotifyAt(task, readData().settings.timezone);
   const delay    = notifyAt - Date.now();
@@ -97,7 +97,7 @@ function restoreTimers() {
   const data = readData();
   let n = 0;
   for (const task of data.tasks) {
-    if (!task.notifications.email && !task.notifications.ha) continue;
+    if (task.notify === false) continue;
     if (getNotifyAt(task) > Date.now()) { scheduleNotification(task); n++; }
   }
   if (n) console.log(`[Schedule] ${n} timers restored`);

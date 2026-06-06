@@ -667,8 +667,8 @@ function setDueType(type) {
 }
 
 function updateNotifyVisibility() {
-  const any = document.getElementById('notifHa').checked || document.getElementById('notifEmail').checked;
-  document.getElementById('notifyTimingSection').style.display = any ? '' : 'none';
+  const enabled = document.getElementById('notifEnabled').checked;
+  document.getElementById('notifyTimingSection').style.display = enabled ? '' : 'none';
 }
 
 function toggleMoreOptions() {
@@ -728,8 +728,7 @@ function openAddModal() {
   document.getElementById('taskNotifyOffset').value='0';
   document.getElementById('taskNotifyTimeWeekday').value='';
   document.getElementById('taskNotifyTimeWeekend').value='';
-  document.getElementById('notifHa').checked=true;
-  document.getElementById('notifEmail').checked=false;
+  document.getElementById('notifEnabled').checked=true;
   updateNotifyVisibility();
   // reset progressive disclosure
   document.getElementById('moreOptionsPanel').style.display='none';
@@ -761,8 +760,7 @@ function openEditModal(id) {
   document.getElementById('taskNotifyOffset').value=String(task.notifyOffset||0);
   document.getElementById('taskNotifyTimeWeekday').value=task.notifyTimeWeekday||'';
   document.getElementById('taskNotifyTimeWeekend').value=task.notifyTimeWeekend||'';
-  document.getElementById('notifHa').checked=(task.notifications?.ha)||false;
-  document.getElementById('notifEmail').checked=(task.notifications?.email)||false;
+  document.getElementById('notifEnabled').checked=task.notify !== false;
   updateNotifyVisibility();
   setDueType(task.dueDate ? 'fixed' : 'interval');
   updateIntervalUI();
@@ -791,7 +789,7 @@ async function saveTask() {
     notifyOffset:         Number(document.getElementById('taskNotifyOffset').value)||0,
     notifyTimeWeekday:    document.getElementById('taskNotifyTimeWeekday').value||null,
     notifyTimeWeekend:    document.getElementById('taskNotifyTimeWeekend').value||null,
-    notifications: { ha: document.getElementById('notifHa').checked, email: document.getElementById('notifEmail').checked }
+    notify: document.getElementById('notifEnabled').checked
   };
   if(!body.name) { alert(L('alert.no_name')); return; }
   const saveBtn = document.querySelector('#taskModal .btn-primary');
@@ -870,8 +868,7 @@ function renderTriggerList() {
         <div><label>Notify</label><select onchange="triggers[${i}].notifyOffset=Number(this.value)"><option value="0" ${(t.notifyOffset||0)===0?'selected':''}>Immediately</option><option value="15" ${t.notifyOffset===15?'selected':''}>15 min before</option><option value="30" ${t.notifyOffset===30?'selected':''}>30 min before</option><option value="60" ${t.notifyOffset===60?'selected':''}>1 hr before</option></select></div>
       </div>
       <div style="display:flex;gap:12px;margin-top:8px;padding:0 2px;">
-        <label style="display:flex;align-items:center;gap:6px;font-size:0.78rem;color:var(--text2);cursor:pointer;"><input type="checkbox" ${t.notifications?.ha?'checked':''} onchange="triggers[${i}].notifications={...triggers[${i}].notifications,ha:this.checked}"> HA Push</label>
-        <label style="display:flex;align-items:center;gap:6px;font-size:0.78rem;color:var(--text2);cursor:pointer;"><input type="checkbox" ${t.notifications?.email?'checked':''} onchange="triggers[${i}].notifications={...triggers[${i}].notifications,email:this.checked}"> Email</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:0.78rem;color:var(--text2);cursor:pointer;"><input type="checkbox" ${t.notify!==false?'checked':''} onchange="triggers[${i}].notify=this.checked"> Notify</label>
       </div>
       ${t.lastState?`<div style="margin-top:6px;font-size:0.7rem;color:var(--text3);">Last state: <strong style="color:var(--text2)">${t.lastState}</strong></div>`:''}
     </div>`
@@ -879,7 +876,7 @@ function renderTriggerList() {
 }
 
 function addTriggerRow() {
-  triggers.push({ id:'trigger_'+Date.now(), enabled:true, entityId:'', toState:'', taskName:'', assignee:'alle', room:'general', dueTime:null, notifyOffset:0, lastState:null, notifications:{email:false,ha:true} });
+  triggers.push({ id:'trigger_'+Date.now(), enabled:true, entityId:'', toState:'', taskName:'', assignee:'alle', room:'general', dueTime:null, notifyOffset:0, lastState:null, notify:true });
   renderTriggerList();
 }
 function removeTrigger(i) { triggers.splice(i,1); renderTriggerList(); }
@@ -1154,7 +1151,7 @@ async function submitNlp() {
     assignee:  p.assignee || (currentView !== 'alle' ? currentView : (users[0]?.id || 'alle')),
     room:      p.room     || (currentGroup !== 'alle' ? currentGroup : 'general'),
     priority:  'normal',
-    notifications: { ha: true, email: false }
+    notify: true
   };
   const btn = document.querySelector('#nlpModal .btn-primary');
   btnLoading(btn, true);

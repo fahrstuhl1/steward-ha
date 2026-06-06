@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.6.6
+### Improvements
+- **Einzel-Benachrichtigungs-Toggle**: Pro Aufgabe gibt es jetzt nur noch einen „Notify"-Toggle (an/aus, Standard: an) statt separater HA- und E-Mail-Checkboxen — welche Kanäle genutzt werden, bestimmt allein die Nutzerkonfiguration
+- **Migration**: Bestehende Tasks mit `notifications.ha/email` werden beim Start automatisch auf `notify: boolean` migriert
+- **Kalender-iCal-URL**: Auch in der Kalenderansicht direkt zugänglich (Footer mit Copy-Button)
+- **Benutzer-Karten**: Nutzereinstellungen werden als lesbare Karten dargestellt statt als gequetschte Zeile
+- **Einstellungen neu sortiert**: Allgemein-Tab → Timezone, Urlaubsmodus, Gamification, Wochenzusammenfassung, Archiv; Aufgaben-Modal → Benachrichtigung zuerst, Zeitfelder nur wenn Notify aktiv
+
+---
+
 ## 1.6.5
 ### New Features
 - **iCal Calendar Feed** — neuer Endpunkt `GET /api/calendar.ics` liefert alle anstehenden Tasks als RFC 5545 iCal-Feed; in HA unter Settings → Integrations → Calendar (iCal) eintragen
