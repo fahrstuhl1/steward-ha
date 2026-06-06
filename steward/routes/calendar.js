@@ -1,6 +1,6 @@
 const express = require('express');
 const router  = express.Router();
-const { readData }    = require('../lib/data');
+const { readData, isOnVacation } = require('../lib/data');
 const { getDueAt, getIntervalMs } = require('../lib/time');
 
 function escIcal(str) {
@@ -29,9 +29,8 @@ function dateStr(ms, tz) {
   return new Date(ms).toLocaleDateString('en-CA', { timeZone: tz || 'UTC' }).replace(/-/g, '');
 }
 
-function makeEvent(task, dueAtMs, summary, description, tz) {
+function makeEvent(task, dueAtMs, summary, description, tz, stamp) {
   const uid   = `${task.id}-${dueAtMs}@steward`;
-  const stamp = utcStamp(Date.now());
   const lines = [
     'BEGIN:VEVENT',
     `UID:${uid}`,
@@ -42,10 +41,8 @@ function makeEvent(task, dueAtMs, summary, description, tz) {
     lines.push(`DTSTART:${utcStamp(dueAtMs)}`);
     lines.push(`DTEND:${utcStamp(dueAtMs + 3600000)}`);
   } else {
-    const d = dateStr(dueAtMs, tz);
-    const tomorrow = dateStr(dueAtMs + 86400000, tz);
-    lines.push(`DTSTART;VALUE=DATE:${d}`);
-    lines.push(`DTEND;VALUE=DATE:${tomorrow}`);
+    lines.push(`DTSTART;VALUE=DATE:${dateStr(dueAtMs, tz)}`);
+    lines.push(`DTEND;VALUE=DATE:${dateStr(dueAtMs + 86400000, tz)}`);
   }
 
   lines.push(`SUMMARY:${escIcal(summary)}`);
@@ -65,26 +62,22 @@ router.get('/calendar.ics', (req, res) => {
     return res.status(503).send('Service Unavailable');
   }
 
-  const tasks = data.tasks;
-  const users = data.settings.users || [];
-  const rooms = data.settings.rooms || [];
-  const tz    = data.settings.timezone || 'UTC';
-
-  // Respect vacation mode — suppress all events during vacation window
-  const nowDate  = new Date();
-  const vacFrom  = data.settings.vacationFrom ? new Date(data.settings.vacationFrom) : null;
-  const vacTo    = data.settings.vacationTo   ? new Date(data.settings.vacationTo + 'T23:59:59') : null;
-  const onVacation = vacFrom && vacTo && nowDate >= vacFrom && nowDate <= vacTo;
+  const { settings, tasks } = data;
+  const tz = settings.timezone || 'UTC';
 
   const HORIZON_MS = 90 * 24 * 3600000;
   const now     = Date.now();
   const horizon = now + HORIZON_MS;
   const events  = [];
 
-  if (!onVacation) {
+  if (!isOnVacation(settings)) {
+    const userMap = new Map((settings.users || []).map(u => [u.id, u]));
+    const roomMap = new Map((settings.rooms || []).map(r => [r.id, r]));
+    const stamp   = utcStamp(now);
+
     for (const task of tasks) {
-      const user = users.find(u => u.id === task.assignee);
-      const room = rooms.find(r => r.id === (task.room || 'general'));
+      const user = userMap.get(task.assignee);
+      const room = roomMap.get(task.room || 'general');
       const assigneeName = user ? user.name : task.assignee === 'alle' ? 'Alle' : task.assignee;
       const roomName     = room ? `${room.icon || ''} ${room.name}`.trim() : task.room;
       const description  = [roomName, assigneeName].filter(Boolean).join(' · ');
@@ -93,7 +86,7 @@ router.get('/calendar.ics', (req, res) => {
         const dueAt = getDueAt(task);
         if (task.lastCompleted && new Date(task.lastCompleted).getTime() >= dueAt) continue;
         if (dueAt >= now - 86400000 && dueAt <= horizon) {
-          events.push(...makeEvent(task, dueAt, task.name, description, tz));
+          events.push(...makeEvent(task, dueAt, task.name, description, tz, stamp));
         }
         continue;
       }
@@ -103,7 +96,7 @@ router.get('/calendar.ics', (req, res) => {
 
       // Recurring: expand occurrences within the horizon
       const intervalMs = getIntervalMs(task);
-      if (!intervalMs) continue; // guard against zero/NaN interval
+      if (!intervalMs) continue;
 
       let occ = getDueAt(task);
       // Rewind to first occurrence at or after (now - 1 day) so we don't emit stale past events
@@ -113,7 +106,7 @@ router.get('/calendar.ics', (req, res) => {
       }
       let count = 0;
       while (occ <= horizon && count < 52) {
-        events.push(...makeEvent(task, occ, task.name, description, tz));
+        events.push(...makeEvent(task, occ, task.name, description, tz, stamp));
         occ += intervalMs;
         count++;
       }

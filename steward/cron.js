@@ -1,5 +1,5 @@
 const cron = require('node-cron');
-const { readData, writeData } = require('./lib/data');
+const { readData, writeData, isOnVacation } = require('./lib/data');
 const { getNotifyAt, isDue } = require('./lib/time');
 const { sendHaNotify, sendEmail } = require('./lib/notifications');
 const { updateHaSensors, checkHaTriggers } = require('./lib/ha');
@@ -7,11 +7,7 @@ const { updateHaSensors, checkHaTriggers } = require('./lib/ha');
 // 15-minute fallback: send missed notifications + 24h repeat for still-pending tasks
 cron.schedule('*/15 * * * *', async () => {
   const data = readData();
-  // Skip all notifications while vacation mode is active
-  const nowDate = new Date();
-  const vacFrom = data.settings.vacationFrom ? new Date(data.settings.vacationFrom) : null;
-  const vacTo   = data.settings.vacationTo   ? new Date(data.settings.vacationTo + 'T23:59:59') : null;
-  if (vacFrom && vacTo && nowDate >= vacFrom && nowDate <= vacTo) return;
+  if (isOnVacation(data.settings)) return;
 
   let changed = false;
   const now = Date.now();

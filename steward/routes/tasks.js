@@ -2,7 +2,7 @@ const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const router  = express.Router();
 
-const { readData, writeData } = require('../lib/data');
+const { readData, writeData, isOnVacation } = require('../lib/data');
 const { INTERVAL_LABELS, getScheduledDueAt, getIntervalMs, getDueAt, isDue, isSoon, nextDueDate, nextDueSerialized } = require('../lib/time');
 const { pendingTimers, scheduleNotification, fireNotification } = require('../lib/notifications');
 const { updateHaSensors } = require('../lib/ha');
@@ -11,10 +11,7 @@ const quickPage = (icon, text) => `<!DOCTYPE html><html><head><meta charset="UTF
 
 router.get('/', (req, res) => {
   const data   = readData();
-  const nowDate = new Date();
-  const vacFrom = data.settings.vacationFrom ? new Date(data.settings.vacationFrom) : null;
-  const vacTo   = data.settings.vacationTo   ? new Date(data.settings.vacationTo + 'T23:59:59') : null;
-  const onVacation = vacFrom && vacTo && nowDate >= vacFrom && nowDate <= vacTo;
+  const onVacation = isOnVacation(data.settings);
   if (onVacation) {
     res.setHeader('X-Vacation-Active', 'true');
     res.setHeader('X-Vacation-To', data.settings.vacationTo);

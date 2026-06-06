@@ -65,4 +65,10 @@ function migrateData(data) {
   return data;
 }
 
-module.exports = { DATA_FILE, readData, writeData, atomicWrite, migrateData, applyHaOptions };
+function isOnVacation(settings) {
+  const vacFrom = settings.vacationFrom ? new Date(settings.vacationFrom)              : null;
+  const vacTo   = settings.vacationTo   ? new Date(settings.vacationTo + 'T23:59:59') : null;
+  return !!(vacFrom && vacTo && new Date() >= vacFrom && new Date() <= vacTo);
+}
+
+module.exports = { DATA_FILE, readData, writeData, atomicWrite, migrateData, applyHaOptions, isOnVacation };

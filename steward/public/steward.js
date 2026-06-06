@@ -889,7 +889,9 @@ async function openSettings() {
   document.getElementById('haToken').value   = '';
   document.getElementById('addonUrl').value  = s.addonUrl || '';
   const baseUrl = (s.addonUrl || s.haUrl || '').replace(/\/$/, '');
-  document.getElementById('icalUrl').value   = baseUrl ? baseUrl + '/api/calendar.ics' : '(Set Addon URL in HA section first)';
+  document.getElementById('icalUrl').value        = baseUrl ? baseUrl + '/api/calendar.ics' : '';
+  document.getElementById('icalUrl').placeholder  = baseUrl ? '' : 'Set Addon URL above first';
+  document.getElementById('icalCopyBtn').disabled = !baseUrl;
   document.getElementById('gmailUser').value = s.gmailUser || '';
   document.getElementById('gmailPass').value = '';
   renderUserList(); renderRoomList(); renderTriggerList();
@@ -901,7 +903,6 @@ function closeSettings() { document.getElementById('settingsModal').classList.re
 
 function copyIcalUrl() {
   const el = document.getElementById('icalUrl');
-  if (el.value.startsWith('(')) return;
   if (navigator.clipboard) { navigator.clipboard.writeText(el.value); } else { el.select(); document.execCommand('copy'); }
 }
 
