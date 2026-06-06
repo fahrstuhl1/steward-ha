@@ -666,6 +666,11 @@ function setDueType(type) {
   }
 }
 
+function updateNotifyVisibility() {
+  const any = document.getElementById('notifHa').checked || document.getElementById('notifEmail').checked;
+  document.getElementById('notifyTimingSection').style.display = any ? '' : 'none';
+}
+
 function toggleMoreOptions() {
   const panel   = document.getElementById('moreOptionsPanel');
   const chevron = document.getElementById('moreOptionsChevron');
@@ -678,6 +683,7 @@ function toggleMoreOptions() {
     const isInterval = document.getElementById('dueBtnInterval').classList.contains('active');
     document.getElementById('scheduleModeRow').style.display = isInterval ? '' : 'none';
     document.getElementById('startDateRow').style.display    = isInterval ? '' : 'none';
+    updateNotifyVisibility();
   }
 }
 
@@ -724,6 +730,7 @@ function openAddModal() {
   document.getElementById('taskNotifyTimeWeekend').value='';
   document.getElementById('notifHa').checked=true;
   document.getElementById('notifEmail').checked=false;
+  updateNotifyVisibility();
   // reset progressive disclosure
   document.getElementById('moreOptionsPanel').style.display='none';
   document.getElementById('moreOptionsChevron').textContent='▾';
@@ -756,7 +763,7 @@ function openEditModal(id) {
   document.getElementById('taskNotifyTimeWeekend').value=task.notifyTimeWeekend||'';
   document.getElementById('notifHa').checked=(task.notifications?.ha)||false;
   document.getElementById('notifEmail').checked=(task.notifications?.email)||false;
-
+  updateNotifyVisibility();
   setDueType(task.dueDate ? 'fixed' : 'interval');
   updateIntervalUI();
   _initIntervalChips();
