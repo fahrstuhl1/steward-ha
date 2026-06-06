@@ -466,7 +466,10 @@ function renderTasks() {
         ${due.length?`<span class="section-due-count">${L('section.due_count', {n: due.length})}</span>`:''}
         <span class="section-chevron">▾</span>
       </div>
-      <div class="section-body">${visible.length ? `<div class="task-list">${visible.map(taskCard).join('')}</div>` : `<div class="waiting-placeholder">${L('section.waiting_hidden', {n: waiting.length})}</div>`}</div>
+      <div class="section-body">${visible.length
+        ? `<div class="task-list">${visible.map(taskCard).join('')}</div>`
+        : `<div class="waiting-chips">${waiting.map(t=>`<span class="waiting-chip">${t.name}</span>`).join('')}</div>`
+      }</div>
     </div>`;
   });
   document.getElementById('taskContainer').innerHTML = html || `<div class="empty-state"><div class="empty-icon">✓</div><div class="empty-title">${L('empty.all_done')}</div><div class="empty-sub">${L('empty.sub')}</div></div>`;

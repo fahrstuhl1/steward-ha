@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.6.3
+### Improvements
+- **Wartend-Sektion**: Task-Namen werden als Chips angezeigt statt nur einem grauen Zähltext — Rauminhalt auf einen Blick sichtbar ohne Aufklappen
+- **„Wartend anzeigen"-Button**: Blauer Akzent-Stil (statt neutralem Grau) — deutlich auffälliger
+- **Section-Trenner**: Dünne Linie zwischen Raum-Sektionen für bessere Gliederung
+
+---
+
 ## 1.6.2
 ### Improvements
 - **UI-Lesbarkeit**: Person-Tabs als Pills statt Full-Width-Balken; Tab-Zeile bei Single-User ohne Gamification ausgeblendet
