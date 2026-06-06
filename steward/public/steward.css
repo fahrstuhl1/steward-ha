@@ -134,7 +134,18 @@ main { max-width: 640px; margin: 0 auto; padding: 16px 14px 60px; }
 .modal-overlay.open { opacity: 1; pointer-events: all; }
 .modal { background: var(--surface); border: 1px solid var(--border2); border-bottom: none; border-radius: 14px 14px 0 0; padding: 6px 20px 24px; padding-bottom: max(24px, env(safe-area-inset-bottom)); width: 100%; max-width: 540px; box-shadow: 0 -12px 48px rgba(0,0,0,0.4); transform: translateY(100%); transition: transform 0.26s cubic-bezier(0.32,0.72,0,1); max-height: 92vh; overflow-y: auto; }
 .modal-overlay.open .modal { transform: translateY(0); }
-.modal-handle { width: 30px; height: 3px; border-radius: 2px; background: var(--border2); margin: 10px auto 18px; }
+.modal-handle { width: 30px; height: 3px; border-radius: 2px; background: var(--border2); margin: 10px auto 18px; cursor: grab; position: relative; touch-action: none; }
+.modal-handle::before { content: ''; position: absolute; inset: -14px -30px; }
+.ctx-menu { position: fixed; background: var(--surface); border: 1px solid var(--border2); border-radius: 10px; padding: 4px; z-index: 400; box-shadow: 0 8px 32px rgba(0,0,0,0.32); min-width: 170px; animation: ctxIn 0.12s ease-out; }
+@keyframes ctxIn { from { opacity:0; transform:scale(0.94) translateY(-4px); } to { opacity:1; transform:scale(1) translateY(0); } }
+.ctx-item { display: block; width: 100%; padding: 10px 14px; font-size: 0.84rem; color: var(--text); background: none; border: none; border-radius: 7px; cursor: pointer; text-align: left; transition: background 0.1s; }
+.ctx-item:hover, .ctx-item:active { background: var(--surface2); }
+.ctx-item-danger { color: #f87171; }
+.settings-tabs { display: flex; gap: 2px; margin: 0 -2px 16px; border-bottom: 1px solid var(--border); overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.settings-tabs::-webkit-scrollbar { display: none; }
+.settings-tab { padding: 8px 14px 9px; font-size: 0.78rem; font-weight: 600; color: var(--text3); background: none; border: none; border-bottom: 2px solid transparent; margin-bottom: -1px; cursor: pointer; white-space: nowrap; transition: color 0.12s, border-color 0.12s; flex-shrink: 0; }
+.settings-tab.active { color: var(--text); border-bottom-color: #5b9cf6; }
+.settings-tab:hover { color: var(--text2); }
 .modal h2 { font-size: 0.95rem; font-weight: 600; margin-bottom: 16px; }
 .form-group { margin-bottom: 11px; }
 .form-group > label { display: block; font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text3); margin-bottom: 5px; }
