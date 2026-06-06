@@ -679,6 +679,8 @@ function openAddModal() {
   document.getElementById('taskDueDate').value='';
   document.getElementById('taskDueTime').value='';
   document.getElementById('taskNotifyOffset').value='0';
+  document.getElementById('taskNotifyTimeWeekday').value='';
+  document.getElementById('taskNotifyTimeWeekend').value='';
   document.getElementById('notifHa').checked=true;
   document.getElementById('notifEmail').checked=false;
   // reset progressive disclosure
@@ -717,6 +719,9 @@ function openEditModal(id) {
   setDueType(task.dueDate ? 'fixed' : 'interval');
   updateIntervalUI();
   _initIntervalChips();
+  document.getElementById('moreOptionsPanel').style.display = 'none';
+  document.getElementById('moreOptionsChevron').textContent = '▾';
+  document.getElementById('moreOptionsLabel').textContent = L('more_options.show');
   document.getElementById('taskModal').classList.add('open');
 }
 
