@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.5.1
+### Bug Fixes
+- **Edit-Modal**: "Weitere Optionen" wurde beim Öffnen nicht zurückgesetzt — blieb im zuletzt hinterlassenen Zustand; wird nun immer eingeklappt geöffnet
+- **Neu-Modal**: Wochentag- und Wochenend-Benachrichtigungszeiten wurden beim Öffnen nicht geleert
+- **i18n**: Toter Key `confirm.delete_task` entfernt (Löschen nutzt seit 1.5.0 einen Undo-Toast statt `window.confirm`)
+
+---
+
 ## 1.5.0
 ### Features
 - **Drag-to-dismiss**: Modal-Handle ist jetzt funktional — nach unten wischen schließt Task-, Einstellungs- und Kommentar-Modal
