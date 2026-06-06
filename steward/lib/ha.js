@@ -39,8 +39,8 @@ async function setHaState(data, entityId, state, attributes) {
   }, payload);
 }
 
-function taskAttrs(list) {
-  return list.map(t => ({ name: t.name, room: t.room || 'general', assignee: t.assignee, priority: t.priority || 'normal', due: nextDueDate(t) }));
+function taskAttrs(list, tz) {
+  return list.map(t => ({ name: t.name, room: t.room || 'general', assignee: t.assignee, priority: t.priority || 'normal', due: nextDueDate(t, tz) }));
 }
 
 async function updateHaSensors() {
@@ -48,26 +48,27 @@ async function updateHaSensors() {
   const tasks = data.tasks;
   const users = data.settings.users || [];
   const rooms = data.settings.rooms || [];
+  const tz    = data.settings.timezone || null;
 
   const onVacation = isOnVacation(data.settings);
 
-  const dueTasks  = onVacation ? [] : tasks.filter(t => isDue(t));
-  const soonTasks = onVacation ? [] : tasks.filter(t => !isDue(t) && isSoon(t));
+  const dueTasks  = onVacation ? [] : tasks.filter(t => isDue(t, tz));
+  const soonTasks = onVacation ? [] : tasks.filter(t => !isDue(t, tz) && isSoon(t, tz));
 
-  await setHaState(data, 'sensor.steward_due',      dueTasks.length,  { friendly_name: 'Steward Due',      icon: 'mdi:clipboard-list',       tasks: taskAttrs(dueTasks) });
-  await setHaState(data, 'sensor.steward_due_soon', soonTasks.length, { friendly_name: 'Steward Due Soon', icon: 'mdi:clock-alert-outline',  tasks: taskAttrs(soonTasks) });
+  await setHaState(data, 'sensor.steward_due',      dueTasks.length,  { friendly_name: 'Steward Due',      icon: 'mdi:clipboard-list',       tasks: taskAttrs(dueTasks,  tz) });
+  await setHaState(data, 'sensor.steward_due_soon', soonTasks.length, { friendly_name: 'Steward Due Soon', icon: 'mdi:clock-alert-outline',  tasks: taskAttrs(soonTasks, tz) });
 
   for (const user of users) {
-    const userDue = onVacation ? [] : tasks.filter(t => (t.assignee === user.id || t.assignee === 'alle') && isDue(t));
+    const userDue = onVacation ? [] : tasks.filter(t => (t.assignee === user.id || t.assignee === 'alle') && isDue(t, tz));
     await setHaState(data, `sensor.steward_${user.id}_due`, userDue.length, {
-      friendly_name: `Steward ${user.name} Due`, icon: 'mdi:account-check', tasks: taskAttrs(userDue)
+      friendly_name: `Steward ${user.name} Due`, icon: 'mdi:account-check', tasks: taskAttrs(userDue, tz)
     });
   }
 
   for (const room of rooms) {
-    const roomDue = onVacation ? [] : tasks.filter(t => (t.room || 'general') === room.id && isDue(t));
+    const roomDue = onVacation ? [] : tasks.filter(t => (t.room || 'general') === room.id && isDue(t, tz));
     await setHaState(data, `sensor.steward_${room.id}_due`, roomDue.length, {
-      friendly_name: `Steward ${room.name || room.id} Due`, icon: room.icon || 'mdi:door', tasks: taskAttrs(roomDue)
+      friendly_name: `Steward ${room.name || room.id} Due`, icon: room.icon || 'mdi:door', tasks: taskAttrs(roomDue, tz)
     });
   }
 }

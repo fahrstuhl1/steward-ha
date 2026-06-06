@@ -32,7 +32,7 @@ cron.schedule('*/15 * * * *', async () => {
       task.lastNotified = new Date().toISOString();
       changed = true;
 
-    } else if (alreadyNotified && isDue(task)) {
+    } else if (alreadyNotified && isDue(task, data.settings.timezone || null)) {
       const hoursSince = (now - new Date(task.lastNotified).getTime()) / 3600000;
       if (hoursSince >= (data.settings.repeatNotifyHours ?? 24)) {
         const allUsers = data.settings.users || [];

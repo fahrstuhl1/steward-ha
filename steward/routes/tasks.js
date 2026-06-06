@@ -16,12 +16,13 @@ router.get('/', (req, res) => {
     res.setHeader('X-Vacation-Active', 'true');
     res.setHeader('X-Vacation-To', data.settings.vacationTo);
   }
+  const tz = data.settings.timezone || null;
   res.json(data.tasks.map(t => ({
     ...t,
-    isDue:        onVacation ? false : isDue(t),
-    isSoon:       onVacation ? false : isSoon(t),
-    nextDue:      nextDueDate(t),
-    nextDueData:  nextDueSerialized(t),
+    isDue:        onVacation ? false : isDue(t, tz),
+    isSoon:       onVacation ? false : isSoon(t, tz),
+    nextDue:      nextDueDate(t, tz),
+    nextDueData:  nextDueSerialized(t, tz),
     dueAtMs:      getDueAt(t),
     intervalLabel: INTERVAL_LABELS[t.interval]
   })));

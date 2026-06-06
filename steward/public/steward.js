@@ -310,6 +310,8 @@ function renderLogoSub() { document.getElementById('logoSub').textContent = user
 function renderPersonTabs() {
   const tabs = document.getElementById('personTabs');
   const weekPts = statsData?.stats || [];
+  const hasMultipleTabs = users.length > 1 || gamificationEnabled;
+  tabs.style.display = hasMultipleTabs ? '' : 'none';
   tabs.innerHTML = users.map(u => {
     const pts = gamificationEnabled ? (weekPts.find(s=>s.userId===u.id)?.pointsWeek || 0) : 0;
     const badge = pts > 0 ? `<span class="points-badge">${pts}</span>` : '';
@@ -473,7 +475,10 @@ function renderTasks() {
         ${due.length?`<span class="section-due-count">${L('section.due_count', {n: due.length})}</span>`:''}
         <span class="section-chevron">▾</span>
       </div>
-      <div class="section-body">${visible.length ? `<div class="task-list">${visible.map(taskCard).join('')}</div>` : `<div class="waiting-placeholder">${L('section.waiting_hidden', {n: waiting.length})}</div>`}</div>
+      <div class="section-body">${visible.length
+        ? `<div class="task-list">${visible.map(taskCard).join('')}</div>`
+        : `<div class="waiting-chips">${waiting.map(t=>`<span class="waiting-chip">${t.name}</span>`).join('')}</div>`
+      }</div>
     </div>`;
   });
   document.getElementById('taskContainer').innerHTML = html || `<div class="empty-state"><div class="empty-icon">✓</div><div class="empty-title">${L('empty.all_done')}</div><div class="empty-sub">${L('empty.sub')}</div></div>`;
