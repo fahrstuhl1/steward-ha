@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.3.1
+### Improvements
+- **Waiting tasks hidden by default**: Completed recurring tasks no longer clutter the overview. They are now grouped with future tasks and revealed via the existing toggle button.
+- Toggle button label dynamically shows the count of hidden waiting tasks, e.g. "Show waiting (5) & future" / "Wartend (5) & Zukünftige anzeigen"
+
+---
+
 ## 1.3.0
 ### Features
 - **Language support (EN/DE)**: Added full English/German translation system (`i18n.js`)
