@@ -350,7 +350,7 @@ async function renderArchiveView() {
 
 function toggleCalendar() { setOverlayView('calendar'); }
 function setGroup(g) { currentGroup=g; render(); }
-function toggleShowDone() { showDone=!showDone; document.getElementById('showDoneBtn').textContent=showDone?L('tasks.hide_future'):L('tasks.show_future'); render(); }
+function toggleShowDone() { showDone=!showDone; render(); }
 function toggleRoom(id) { collapsedRooms.has(id)?collapsedRooms.delete(id):collapsedRooms.add(id); const el=document.getElementById('sec-'+id); if(el)el.classList.toggle('collapsed',collapsedRooms.has(id)); }
 
 function filteredTasks() {
@@ -382,14 +382,15 @@ function renderTasks() {
   const ft=filteredTasks(), grouped={};
   rooms.forEach(r => grouped[r.id]=[]);
   ft.forEach(t => { const rid=t.room||'general'; if(!grouped[rid])grouped[rid]=[]; grouped[rid].push(t); });
-  let html='';
+  let html='', totalWaiting=0;
   rooms.forEach(r => {
     const group=grouped[r.id]; if(!group||!group.length) return;
     const due     = group.filter(t => t.isDue || t.isSoon);
     const waiting = group.filter(t => !t.isDue && !t.isSoon && t.lastCompleted && !t.dueDate);
     const future  = group.filter(t => !t.isDue && !t.isSoon && !(t.lastCompleted && !t.dueDate));
     due.sort((a,b)=>{ if(a.isDue!==b.isDue) return a.isDue?-1:1; return PRIORITY_ORDER[a.priority||'normal']-PRIORITY_ORDER[b.priority||'normal']; });
-    const visible = [...due, ...waiting, ...(showDone ? future : [])];
+    if(!showDone) totalWaiting+=waiting.length;
+    const visible = [...due, ...(showDone ? [...waiting, ...future] : [])];
     if(!visible.length) return;
     const collapsed=collapsedRooms.has(r.id);
     html+=`<div class="section ${collapsed?'collapsed':''}" id="sec-${r.id}">
@@ -402,6 +403,10 @@ function renderTasks() {
     </div>`;
   });
   document.getElementById('taskContainer').innerHTML = html || `<div class="empty-state">${L('empty.all_done')}</div>`;
+  const btn=document.getElementById('showDoneBtn');
+  if(showDone) btn.textContent=L('tasks.hide_future');
+  else if(totalWaiting>0) btn.textContent=L('tasks.show_waiting_count', {n: totalWaiting});
+  else btn.textContent=L('tasks.show_future');
 }
 
 function getUserById(id) { return users.find(u => u.id === id); }
