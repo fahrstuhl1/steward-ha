@@ -44,6 +44,7 @@
 
 <div id="pullIndicator" data-i18n="pull.release">↓ Release to refresh</div>
 <div class="undo-toast" id="undoToast"><span class="undo-text" id="undoText"></span><button class="undo-btn" onclick="undoComplete()" data-i18n="undo.btn">Undo</button></div>
+<div class="undo-toast" id="deleteToast" style="bottom:72px"><span class="undo-text" id="deleteText"></span><button class="undo-btn" onclick="undoDelete()" data-i18n="undo.btn">Undo</button></div>
 
 <main id="taskMain">
   <div id="taskContainer"></div>
@@ -215,107 +216,121 @@
     <div class="modal-handle"></div>
     <h2 data-i18n="settings.title">Settings</h2>
 
-    <div class="settings-section">
-      <h3 data-i18n="settings.archive">Archive & Planning</h3>
-      <div class="form-row">
-        <div class="form-group">
-          <label data-i18n="label.archive_days">Archive retention (days)</label>
-          <input type="number" id="archiveDays" min="7" max="365" placeholder="180" />
+    <div class="settings-tabs">
+      <button class="settings-tab active" data-tab="general" onclick="switchSettingsTab('general')" data-i18n="settings.tab_general">General</button>
+      <button class="settings-tab" data-tab="users" onclick="switchSettingsTab('users')" data-i18n="settings.tab_users">Users & Rooms</button>
+      <button class="settings-tab" data-tab="ha" onclick="switchSettingsTab('ha')" data-i18n="settings.tab_ha">HA</button>
+      <button class="settings-tab" data-tab="backup" onclick="switchSettingsTab('backup')" data-i18n="settings.tab_backup">Backup</button>
+    </div>
+
+    <!-- General tab -->
+    <div class="settings-tab-panel" data-tab="general">
+      <div class="settings-section">
+        <h3 data-i18n="settings.archive">Archive & Planning</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label data-i18n="label.archive_days">Archive retention (days)</label>
+            <input type="number" id="archiveDays" min="7" max="365" placeholder="180" />
+          </div>
+          <div class="form-group">
+            <label data-i18n="label.planning_days">Planning horizon (days)</label>
+            <input type="number" id="planningDays" min="1" max="30" placeholder="7" />
+          </div>
         </div>
         <div class="form-group">
-          <label data-i18n="label.planning_days">Planning horizon (days)</label>
-          <input type="number" id="planningDays" min="1" max="30" placeholder="7" />
+          <label>Timezone</label>
+          <div style="display:flex;gap:8px;">
+            <select id="settingsTimezone" style="flex:1;">
+              <option value="UTC">UTC</option>
+              <option value="Europe/Berlin">Europe/Berlin (CEST)</option>
+              <option value="Europe/London">Europe/London (BST)</option>
+              <option value="America/New_York">America/New_York (EDT)</option>
+              <option value="America/Chicago">America/Chicago (CDT)</option>
+              <option value="America/Los_Angeles">America/Los_Angeles (PDT)</option>
+              <option value="Asia/Tokyo">Asia/Tokyo (JST)</option>
+              <option value="Asia/Shanghai">Asia/Shanghai (CST)</option>
+              <option value="Australia/Sydney">Australia/Sydney (AEDT)</option>
+            </select>
+            <button class="btn btn-secondary" style="padding:8px 12px;font-size:0.78rem;" onclick="syncTimezoneFromHA()" title="Fetch from Home Assistant">🔄</button>
+          </div>
+          <small style="color:var(--text2);margin-top:4px;">Current: <span id="timezoneDisplay">UTC</span></small>
         </div>
       </div>
-      <div class="form-group">
-        <label>Timezone</label>
-        <div style="display:flex;gap:8px;">
-          <select id="settingsTimezone" style="flex:1;">
-            <option value="UTC">UTC</option>
-            <option value="Europe/Berlin">Europe/Berlin (CEST)</option>
-            <option value="Europe/London">Europe/London (BST)</option>
-            <option value="America/New_York">America/New_York (EDT)</option>
-            <option value="America/Chicago">America/Chicago (CDT)</option>
-            <option value="America/Los_Angeles">America/Los_Angeles (PDT)</option>
-            <option value="Asia/Tokyo">Asia/Tokyo (JST)</option>
-            <option value="Asia/Shanghai">Asia/Shanghai (CST)</option>
-            <option value="Australia/Sydney">Australia/Sydney (AEDT)</option>
-          </select>
-          <button class="btn btn-secondary" style="padding:8px 12px;font-size:0.78rem;" onclick="syncTimezoneFromHA()" title="Fetch from Home Assistant">🔄</button>
+      <hr class="divider" />
+      <div class="settings-section">
+        <h3 data-i18n="settings.gamif">Gamification</h3>
+        <label class="toggle-row">
+          <input type="checkbox" id="gamificationToggle" />
+          <span class="toggle-track"></span>
+          <div class="toggle-text">
+            <div class="toggle-label" data-i18n="label.gamif">Enable points system</div>
+            <div class="toggle-desc" data-i18n="desc.gamif">Points, leaderboard, achievements and streaks</div>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <!-- Users & Rooms tab -->
+    <div class="settings-tab-panel" data-tab="users" style="display:none">
+      <div class="settings-section">
+        <h3 data-i18n="settings.members">Users</h3>
+        <div class="list-rows" id="userList"></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button class="add-row-btn" style="flex:1;" onclick="addUserRow()">+ Add user</button>
+          <button class="btn btn-secondary" style="flex:none;padding:8px 12px;font-size:0.78rem;" onclick="importHaPersons()">🏠 Import from HA</button>
         </div>
-        <small style="color:var(--text2);margin-top:4px;">Current: <span id="timezoneDisplay">UTC</span></small>
+      </div>
+      <hr class="divider" />
+      <div class="settings-section">
+        <h3 data-i18n="settings.rooms">Rooms</h3>
+        <div class="list-rows" id="roomList"></div>
+        <button class="add-row-btn" onclick="addRoomRow()">+ Add room</button>
       </div>
     </div>
-    <hr class="divider" />
 
-    <div class="settings-section">
-      <h3 data-i18n="settings.gamif">Gamification</h3>
-      <label class="toggle-row">
-        <input type="checkbox" id="gamificationToggle" />
-        <span class="toggle-track"></span>
-        <div class="toggle-text">
-          <div class="toggle-label" data-i18n="label.gamif">Enable points system</div>
-          <div class="toggle-desc" data-i18n="desc.gamif">Points, leaderboard, achievements and streaks</div>
+    <!-- HA tab -->
+    <div class="settings-tab-panel" data-tab="ha" style="display:none">
+      <div class="settings-section">
+        <h3>Home Assistant</h3>
+        <div class="form-group"><label>HA URL</label><input type="text" id="haUrl" placeholder="https://xxx.ui.nabu.casa" /></div>
+        <div class="form-group"><label>Access Token</label><input type="password" id="haToken" placeholder="eyJ..." /></div>
+        <div class="form-group">
+          <label>Addon URL <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text3)">(for notification buttons, defaults to HA URL)</span></label>
+          <input type="text" id="addonUrl" placeholder="https://xxx.ui.nabu.casa" />
         </div>
-      </label>
-    </div>
-    <hr class="divider" />
-
-    <div class="settings-section">
-      <h3 data-i18n="settings.members">Users</h3>
-      <div class="list-rows" id="userList"></div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;">
-        <button class="add-row-btn" style="flex:1;" onclick="addUserRow()">+ Add user</button>
-        <button class="btn btn-secondary" style="flex:none;padding:8px 12px;font-size:0.78rem;" onclick="importHaPersons()">🏠 Import from HA</button>
+      </div>
+      <hr class="divider" />
+      <div class="settings-section">
+        <h3>HA Triggers</h3>
+        <p style="font-size:0.75rem;color:var(--text3);margin-bottom:10px;">Automatically creates a task when an HA entity reaches a specific state.</p>
+        <div id="triggerList"></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button class="add-row-btn" style="flex:1;" onclick="addTriggerRow()">+ Add trigger</button>
+          <button class="btn btn-secondary" style="flex:none;padding:8px 12px;font-size:0.78rem;" onclick="loadHaEntities()">🔍 Load entities</button>
+        </div>
+        <datalist id="entitySuggestions"></datalist>
+      </div>
+      <hr class="divider" />
+      <div class="settings-section">
+        <h3>Email (sender)</h3>
+        <div class="form-group"><label>Gmail address</label><input type="email" id="gmailUser" placeholder="sender@gmail.com" /></div>
+        <div class="form-group"><label>App password</label><input type="password" id="gmailPass" placeholder="xxxx xxxx xxxx xxxx" /></div>
       </div>
     </div>
-    <hr class="divider" />
 
-    <div class="settings-section">
-      <h3 data-i18n="settings.rooms">Rooms</h3>
-      <div class="list-rows" id="roomList"></div>
-      <button class="add-row-btn" onclick="addRoomRow()">+ Add room</button>
-    </div>
-    <hr class="divider" />
-
-    <div class="settings-section">
-      <h3>Home Assistant</h3>
-      <div class="form-group"><label>HA URL</label><input type="text" id="haUrl" placeholder="https://xxx.ui.nabu.casa" /></div>
-      <div class="form-group"><label>Access Token</label><input type="password" id="haToken" placeholder="eyJ..." /></div>
-      <div class="form-group">
-        <label>Addon URL <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text3)">(for notification buttons, defaults to HA URL)</span></label>
-        <input type="text" id="addonUrl" placeholder="https://xxx.ui.nabu.casa" />
+    <!-- Backup tab -->
+    <div class="settings-tab-panel" data-tab="backup" style="display:none">
+      <div class="settings-section">
+        <h3 data-i18n="settings.backup">Backup & Restore</h3>
+        <p style="font-size:0.75rem;color:var(--text3);margin-bottom:10px;">Export includes all tasks, settings, users, rooms, completions and archive. The backup file contains sensitive data (HA token, passwords) — store it securely.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-secondary" style="flex:1;" onclick="exportData()" data-i18n="btn.export">⬇ Export backup</button>
+          <button class="btn btn-secondary" style="flex:1;" onclick="document.getElementById('importFileInput').click()" data-i18n="btn.import">⬆ Import backup</button>
+        </div>
+        <input type="file" id="importFileInput" accept=".json" style="display:none" onchange="handleImport(this)" />
       </div>
     </div>
-    <hr class="divider" />
 
-    <div class="settings-section">
-      <h3>HA Triggers</h3>
-      <p style="font-size:0.75rem;color:var(--text3);margin-bottom:10px;">Automatically creates a task when an HA entity reaches a specific state.</p>
-      <div id="triggerList"></div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;">
-        <button class="add-row-btn" style="flex:1;" onclick="addTriggerRow()">+ Add trigger</button>
-        <button class="btn btn-secondary" style="flex:none;padding:8px 12px;font-size:0.78rem;" onclick="loadHaEntities()">🔍 Load entities</button>
-      </div>
-      <datalist id="entitySuggestions"></datalist>
-    </div>
-    <hr class="divider" />
-
-    <div class="settings-section">
-      <h3>Email (sender)</h3>
-      <div class="form-group"><label>Gmail address</label><input type="email" id="gmailUser" placeholder="sender@gmail.com" /></div>
-      <div class="form-group"><label>App password</label><input type="password" id="gmailPass" placeholder="xxxx xxxx xxxx xxxx" /></div>
-    </div>
-    <hr class="divider" />
-    <div class="settings-section">
-      <h3 data-i18n="settings.backup">Backup & Restore</h3>
-      <p style="font-size:0.75rem;color:var(--text3);margin-bottom:10px;">Export includes all tasks, settings, users, rooms, completions and archive. The backup file contains sensitive data (HA token, passwords) — store it securely.</p>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button class="btn btn-secondary" style="flex:1;" onclick="exportData()" data-i18n="btn.export">⬇ Export backup</button>
-        <button class="btn btn-secondary" style="flex:1;" onclick="document.getElementById('importFileInput').click()" data-i18n="btn.import">⬆ Import backup</button>
-      </div>
-      <input type="file" id="importFileInput" accept=".json" style="display:none" onchange="handleImport(this)" />
-    </div>
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="closeSettings()" data-i18n="btn.cancel">Cancel</button>
       <button class="btn btn-primary"   onclick="saveSettings()" data-i18n="btn.save">Save</button>

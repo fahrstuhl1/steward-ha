@@ -1,5 +1,30 @@
 # Changelog
 
+## 1.5.1
+### Bug Fixes
+- **Edit-Modal**: "Weitere Optionen" wurde beim Öffnen nicht zurückgesetzt — blieb im zuletzt hinterlassenen Zustand; wird nun immer eingeklappt geöffnet
+- **Neu-Modal**: Wochentag- und Wochenend-Benachrichtigungszeiten wurden beim Öffnen nicht geleert
+- **i18n**: Toter Key `confirm.delete_task` entfernt (Löschen nutzt seit 1.5.0 einen Undo-Toast statt `window.confirm`)
+
+---
+
+## 1.5.0
+### Features
+- **Drag-to-dismiss**: Modal-Handle ist jetzt funktional — nach unten wischen schließt Task-, Einstellungs- und Kommentar-Modal
+- **Kontext-Menü**: Kacheln haben jetzt einen `···`-Button der ein Kontext-Menü öffnet (Bearbeiten, Zurückstellen, Termin überspringen, Duplizieren, Löschen) — kein visuelles Chaos mit 5 Buttons pro Kachel mehr
+- **Undo für Löschen**: Löschen zeigt einen 5-Sekunden-Toast mit "Rückgängig"-Option statt sofort irreversibel zu löschen
+- **Einstellungen mit Tabs**: Einstellungs-Modal in 4 Tabs aufgeteilt (Allgemein / Nutzer & Räume / HA / Backup) statt einem langen Scroll
+- **Ladeindikator**: Speicher-Buttons (Aufgabe, Einstellungen) werden während des Speicherns deaktiviert und zeigen `…`; Haken-Button auf der Kachel wird während des Abschlusses deaktiviert; Zurückstellen/Überspringen sind gegen Doppel-Aufrufe abgesichert
+
+---
+
+## 1.4.3
+### Improvements
+- **Tap-to-edit**: Tippen auf den Aufgaben-Namen/-Info-Bereich öffnet direkt den Bearbeitungsmodus
+- **Bearbeitungsmodal**: "Weitere Optionen" ist standardmäßig eingeklappt — saubere Ansicht beim Öffnen, bei Bedarf manuell erweiterbar
+
+---
+
 ## 1.4.2
 ### Bug Fixes
 - **Skip-Route**: `getScheduledDueAt` durch `getDueAt` ersetzt — aufeinanderfolgende Skips ohne zwischenzeitliche Erledigung rückten die Aufgabe nicht weiter vor (blieben beim ersten Skip-Datum stecken)

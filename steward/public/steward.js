@@ -44,6 +44,47 @@ async function undoComplete() {
   await loadTasks();
 }
 
+let modalDragState = null;
+function initModalDrag() {
+  document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    const handle = overlay.querySelector('.modal-handle');
+    if (!handle) return;
+    handle.addEventListener('touchstart', e => {
+      if (!overlay.classList.contains('open')) return;
+      const modal = overlay.querySelector('.modal');
+      modalDragState = { overlay, modal, startY: e.touches[0].clientY, height: modal.offsetHeight };
+      modal.style.transition = 'none';
+    }, {passive: true});
+  });
+  document.addEventListener('touchmove', e => {
+    if (!modalDragState) return;
+    const { modal, overlay, startY } = modalDragState;
+    const dy = Math.max(0, e.touches[0].clientY - startY);
+    modal.style.transform = `translateY(${dy}px)`;
+    overlay.style.background = `rgba(0,0,0,${Math.max(0, 0.55 * (1 - dy / (modalDragState.height * 0.55))).toFixed(2)})`;
+  }, {passive: true});
+  document.addEventListener('touchend', e => {
+    if (!modalDragState) return;
+    const { overlay, modal, startY } = modalDragState;
+    const dy = e.changedTouches[0].clientY - startY;
+    modal.style.transition = '';
+    overlay.style.background = '';
+    modal.style.transform = '';
+    modalDragState = null;
+    if (dy > 110) {
+      if (overlay.id === 'taskModal') closeTaskModal();
+      else if (overlay.id === 'settingsModal') closeSettings();
+      else submitComment(false);
+    }
+  }, {passive: true});
+}
+
+function btnLoading(btn, loading) {
+  if (!btn) return;
+  if (loading) { btn.disabled = true; btn.dataset.origHtml = btn.innerHTML; btn.innerHTML = '<span style="opacity:0.45">…</span>'; }
+  else { btn.disabled = false; if (btn.dataset.origHtml !== undefined) { btn.innerHTML = btn.dataset.origHtml; delete btn.dataset.origHtml; } }
+}
+
 let swipeStartX=0, swipeStartY=0, swipeTaskId=null, swipeActive=false;
 function initSwipe() {
   const container = document.getElementById('taskMain');
@@ -136,6 +177,7 @@ async function init() {
   setInterval(loadStats, 60000);
   initSwipe();
   initPullToRefresh();
+  initModalDrag();
 }
 
 async function loadStats() {
@@ -433,9 +475,6 @@ function taskCard(t) {
   const priorityDot   = t.priority && t.priority !== 'normal' ? `<span class="priority-dot priority-${t.priority}"></span>` : '';
   const snoozeHint    = t.snoozedUntil && new Date(t.snoozedUntil) > new Date() ? `<div class="snooze-hint">${L('snooze.hint', {time: new Date(t.snoozedUntil).toLocaleTimeString(document.documentElement.lang === 'de' ? 'de-DE' : 'en-GB', {hour:'2-digit',minute:'2-digit'})})}</div>` : '';
   const commentLine   = t.lastComment ? `<div class="comment-text">💬 ${t.lastComment}</div>` : '';
-  const snoozeBtn     = (isNow || isSoonFlag) ? `<button class="task-action-btn" onclick="snoozeTask('${t.id}')" title="Snooze">⏰</button>` : '';
-  const skipBtn       = !t.dueDate ? `<button class="task-action-btn" onclick="skipTask('${t.id}')" title="${L('btn.skip_task')}">⏩</button>` : '';
-  const dupeBtn       = `<button class="task-action-btn" onclick="duplicateTask('${t.id}')" title="${L('btn.duplicate')}">⧉</button>`;
   const checkIcon     = isWaiting ? '⏳' : '✓';
   const nextDueStr    = formatNextDue(t.nextDueData) || t.nextDue;
   const waitingLabel  = isWaiting ? `<span class="due-label muted">⏳ ${L('state.waiting')} · ${nextDueStr}</span>` : `<span class="due-label ${dueClass}">${nextDueStr}</span>`;
@@ -447,7 +486,7 @@ function taskCard(t) {
       <div class="task-meta">${badgeHtml}<span class="meta-dot">·</span><span class="meta-text">${intervalLabel}</span><span class="meta-dot">·</span>${waitingLabel}${notifyHint}</div>
       ${snoozeHint}${commentLine}
     </div>
-    <div class="task-actions">${snoozeBtn}${skipBtn}${dupeBtn}<button class="task-action-btn" onclick="openEditModal('${t.id}')">✏</button><button class="task-action-btn" onclick="deleteTask('${t.id}')">✕</button></div>
+    <div class="task-actions"><button class="task-action-btn" onclick="openCtxMenu(event,'${t.id}')" title="${L('btn.more')}">···</button></div>
   </div>`;
 }
 
@@ -463,33 +502,50 @@ async function toggleComplete(id) {
     document.getElementById('commentModal').classList.add('open');
     setTimeout(()=>document.getElementById('commentInput').focus(), 300);
   } else {
-    await fetch(`api/tasks/${id}/reset`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId}) });
-    await loadTasks();
+    const checkBtn = document.querySelector(`[data-id="${id}"] .check-btn`);
+    btnLoading(checkBtn, true);
+    try {
+      await fetch(`api/tasks/${id}/reset`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId}) });
+      await loadTasks();
+    } finally { btnLoading(checkBtn, false); }
   }
 }
 
 async function submitComment(save) {
   document.getElementById('commentModal').classList.remove('open');
   if (!pendingCompleteId) return;
+  const checkBtn = document.querySelector(`[data-id="${pendingCompleteId}"] .check-btn`);
+  btnLoading(checkBtn, true);
   const comment = save ? document.getElementById('commentInput').value.trim() : null;
   const userId  = document.getElementById('completedBySelect').value || pendingCompleteUserId;
-  await fetch(`api/tasks/${pendingCompleteId}/complete`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ userId, comment }) });
-  const completedId = pendingCompleteId;
-  const completedName = tasks.find(t=>t.id===completedId)?.name || '';
-  pendingCompleteId = null; pendingCompleteUserId = null;
-  await loadTasks();
-  lastCompletedId = completedId;
-  showUndoToast(completedName);
+  try {
+    await fetch(`api/tasks/${pendingCompleteId}/complete`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ userId, comment }) });
+    const completedId = pendingCompleteId;
+    const completedName = tasks.find(t=>t.id===completedId)?.name || '';
+    pendingCompleteId = null; pendingCompleteUserId = null;
+    await loadTasks();
+    lastCompletedId = completedId;
+    showUndoToast(completedName);
+  } finally { btnLoading(checkBtn, false); }
 }
 
+let actionInProgress = false;
 async function snoozeTask(id) {
-  await fetch(`api/tasks/${id}/snooze`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({hours:2}) });
-  await loadTasks();
+  if (actionInProgress) return;
+  actionInProgress = true;
+  try {
+    await fetch(`api/tasks/${id}/snooze`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({hours:2}) });
+    await loadTasks();
+  } finally { actionInProgress = false; }
 }
 
 async function skipTask(id) {
-  await fetch(`api/tasks/${id}/skip`, { method:'POST' });
-  await loadTasks();
+  if (actionInProgress) return;
+  actionInProgress = true;
+  try {
+    await fetch(`api/tasks/${id}/skip`, { method:'POST' });
+    await loadTasks();
+  } finally { actionInProgress = false; }
 }
 
 function duplicateTask(id) {
@@ -498,11 +554,56 @@ function duplicateTask(id) {
   document.getElementById('modalTitle').textContent = L('modal.duplicate_task');
 }
 
-async function deleteTask(id) {
-  if(!confirm(L('confirm.delete_task'))) return;
-  await fetch(`api/tasks/${id}`, {method:'DELETE'});
-  await loadTasks();
+let activeCtxMenu = null;
+function openCtxMenu(e, taskId) {
+  e.stopPropagation();
+  closeCtxMenu();
+  const task = tasks.find(t => t.id === taskId);
+  if (!task) return;
+  const isRecurring = !task.dueDate;
+  const isDueOrSoon = task.isDue || task.isSoon;
+  const items = [
+    `<button class="ctx-item" onclick="closeCtxMenu();openEditModal('${taskId}')">${L('btn.edit')}</button>`,
+    isDueOrSoon ? `<button class="ctx-item" onclick="closeCtxMenu();snoozeTask('${taskId}')">${L('btn.snooze')}</button>` : '',
+    isRecurring  ? `<button class="ctx-item" onclick="closeCtxMenu();skipTask('${taskId}')">${L('btn.skip_task')}</button>` : '',
+    `<button class="ctx-item" onclick="closeCtxMenu();duplicateTask('${taskId}')">${L('btn.duplicate')}</button>`,
+    `<button class="ctx-item ctx-item-danger" onclick="closeCtxMenu();deleteTask('${taskId}')">${L('btn.delete')}</button>`,
+  ].filter(Boolean).join('');
+  const menu = document.createElement('div');
+  menu.className = 'ctx-menu';
+  menu.innerHTML = items;
+  menu.style.right = `${window.innerWidth - e.currentTarget.getBoundingClientRect().right}px`;
+  menu.style.top = `${e.currentTarget.getBoundingClientRect().bottom + 4}px`;
+  document.body.appendChild(menu);
+  if (e.currentTarget.getBoundingClientRect().bottom + 4 + menu.offsetHeight > window.innerHeight - 8) {
+    menu.style.top = `${e.currentTarget.getBoundingClientRect().top - menu.offsetHeight - 4}px`;
+  }
+  activeCtxMenu = menu;
+  setTimeout(() => document.addEventListener('click', closeCtxMenu), 0);
 }
+function closeCtxMenu() {
+  if (activeCtxMenu) { activeCtxMenu.remove(); activeCtxMenu = null; }
+  document.removeEventListener('click', closeCtxMenu);
+}
+
+let deleteUndoTimeout = null, pendingDeleteId = null;
+async function deleteTask(id) {
+  const task = tasks.find(t => t.id === id);
+  if (!task) return;
+  if (deleteUndoTimeout) { clearTimeout(deleteUndoTimeout); fetch(`api/tasks/${pendingDeleteId}`, {method:'DELETE'}); }
+  pendingDeleteId = id;
+  tasks = tasks.filter(t => t.id !== id);
+  render();
+  document.getElementById('deleteText').textContent = L('undo.deleted', {name: task.name});
+  document.getElementById('deleteToast').classList.add('show');
+  deleteUndoTimeout = setTimeout(async () => {
+    hideDeleteToast();
+    await fetch(`api/tasks/${pendingDeleteId}`, {method:'DELETE'});
+    pendingDeleteId = null;
+  }, 5000);
+}
+function hideDeleteToast() { document.getElementById('deleteToast').classList.remove('show'); deleteUndoTimeout = null; }
+async function undoDelete() { clearTimeout(deleteUndoTimeout); hideDeleteToast(); pendingDeleteId = null; await loadTasks(); }
 
 function updateIntervalUI() {
   const val = document.getElementById('taskInterval').value;
@@ -578,6 +679,8 @@ function openAddModal() {
   document.getElementById('taskDueDate').value='';
   document.getElementById('taskDueTime').value='';
   document.getElementById('taskNotifyOffset').value='0';
+  document.getElementById('taskNotifyTimeWeekday').value='';
+  document.getElementById('taskNotifyTimeWeekend').value='';
   document.getElementById('notifHa').checked=true;
   document.getElementById('notifEmail').checked=false;
   // reset progressive disclosure
@@ -616,6 +719,9 @@ function openEditModal(id) {
   setDueType(task.dueDate ? 'fixed' : 'interval');
   updateIntervalUI();
   _initIntervalChips();
+  document.getElementById('moreOptionsPanel').style.display = 'none';
+  document.getElementById('moreOptionsChevron').textContent = '▾';
+  document.getElementById('moreOptionsLabel').textContent = L('more_options.show');
   document.getElementById('taskModal').classList.add('open');
 }
 
@@ -640,9 +746,13 @@ async function saveTask() {
     notifications: { ha: document.getElementById('notifHa').checked, email: document.getElementById('notifEmail').checked }
   };
   if(!body.name) { alert(L('alert.no_name')); return; }
-  await fetch(editingTaskId ? `api/tasks/${editingTaskId}` : 'api/tasks', { method: editingTaskId?'PUT':'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
-  closeTaskModal();
-  await loadTasks();
+  const saveBtn = document.querySelector('#taskModal .btn-primary');
+  btnLoading(saveBtn, true);
+  try {
+    await fetch(editingTaskId ? `api/tasks/${editingTaskId}` : 'api/tasks', { method: editingTaskId?'PUT':'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    closeTaskModal();
+    await loadTasks();
+  } finally { btnLoading(saveBtn, false); }
 }
 
 function renderUserList() {
@@ -725,6 +835,11 @@ async function loadHaEntities() {
   } catch(e) { alert('Error: '+e.message); }
 }
 
+function switchSettingsTab(tab) {
+  document.querySelectorAll('.settings-tab-panel').forEach(p => { p.style.display = p.dataset.tab === tab ? '' : 'none'; });
+  document.querySelectorAll('.settings-tab').forEach(b => { b.classList.toggle('active', b.dataset.tab === tab); });
+}
+
 async function openSettings() {
   const s = await (await fetch('api/settings')).json();
   users    = (s.users && s.users.length)    ? s.users    : users;
@@ -741,6 +856,7 @@ async function openSettings() {
   document.getElementById('gmailUser').value = s.gmailUser || '';
   document.getElementById('gmailPass').value = '';
   renderUserList(); renderRoomList(); renderTriggerList();
+  switchSettingsTab('general');
   document.getElementById('settingsModal').classList.add('open');
 }
 
@@ -774,10 +890,14 @@ async function saveSettings() {
     gmailAppPassword:   document.getElementById('gmailPass').value,
     ...(haTokenVal ? {haToken: haTokenVal} : {})
   };
-  await fetch('api/settings', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
-  closeSettings();
-  await loadSettings();
-  render();
+  const saveBtn = document.querySelector('#settingsModal .btn-primary');
+  btnLoading(saveBtn, true);
+  try {
+    await fetch('api/settings', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    closeSettings();
+    await loadSettings();
+    render();
+  } finally { btnLoading(saveBtn, false); }
 }
 
 ['taskModal','settingsModal','commentModal'].forEach(id => {
