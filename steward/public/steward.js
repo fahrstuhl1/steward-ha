@@ -901,6 +901,7 @@ function closeSettings() { document.getElementById('settingsModal').classList.re
 
 function copyIcalUrl() {
   const el = document.getElementById('icalUrl');
+  if (el.value.startsWith('(')) return;
   if (navigator.clipboard) { navigator.clipboard.writeText(el.value); } else { el.select(); document.execCommand('copy'); }
 }
 
