@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.6.1
+### Bug Fixes
+- **NLP Quick-Add**: Einmalige Aufgaben (Datum erkannt) wurden mit `interval:'weekly'` statt `interval:'once'` gespeichert
+- **NLP-Tags**: Inline `border-color` hatte keinen Effekt — `.nlp-tag` hatte kein `border`-Basisstyle; auf `border: 1.5px solid transparent` gesetzt
+- **NLP-Parser**: Nutzer- und Rausnamen wurden ohne Escaping als RegExp-Muster verwendet — `esc()`-Helper ergänzt (verhindert ReDoS bei Sonderzeichen in Namen)
+- **Wöchentliche Zusammenfassung**: `data.settings.notifications?.ha` war immer `undefined` (falsy) — fix auf `user.haService` für HA-Push je Nutzer
+- **`showNotification`**: Funktion wurde aufgerufen, aber nie definiert — Auto-Dismiss-Toast hinzugefügt
+- **`/api/sync-timezone`**: Route fehlte komplett — `fetchHaConfig` in `ha.js` ergänzt und Route in `settings.js` registriert
+- **HA-Sensoren im Urlaub**: `updateHaSensors` ignorierte Urlaubsmodus — Sensoren zeigten weiterhin Live-Zählungen; Urlaubs-Guard ergänzt (alle Sensoren auf 0 während Urlaub)
+- **HA-Trigger Einmalaufgaben**: `checkHaTriggers` erstellte Aufgaben mit `interval:'once'` und `dueDate:null` — Aufgaben wurden nach Erledigung nicht archiviert sondern neu eingeplant; `dueDate: todayStr` ergänzt
+- **Abschluss-Animation**: `checkPulse` CSS-Animation-Klasse wurde im JS nie gesetzt und wäre durch DOM-Re-Render verloren gegangen — durch body-level `spawnPulseRing(x, y)` ersetzt
+- **Urlaubsbanner**: `#vacationBannerSub` wurde nie befüllt — Banner zeigte kein Enddatum; `X-Vacation-To` Header ausgelesen und in `render()` eingetragen
+- **`···`-Button Touch-Target**: Schaltfläche war ~18 px groß (Apple HIG-Minimum 44 px verfehlt) — auf `padding: 8px 10px; min-height: 36px` vergrößert
+- **Benachrichtigungskanal-Label**: "Notification channel" war hart auf Englisch kodiert — i18n-Keys `label.notify_channel`, `desc.notify_ha`, `desc.notify_email` ergänzt
+- **NLP-Eingabe**: Browser-Autocomplete und Autokorrektur im NLP-Eingabefeld wurden nicht unterdrückt — `autocomplete="off" autocorrect="off" spellcheck="false"` hinzugefügt
+
+---
+
 ## 1.6.0
 ### Features
 - **Touch-Target & Haptic**: Haken-Button auf 36 × 36 px vergrößert (bessere Treffbarkeit); Vibration beim Abschluss (`[50, 30, 50]` ms Pattern)
