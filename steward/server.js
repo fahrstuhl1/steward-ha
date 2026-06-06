@@ -7,6 +7,7 @@ const { updateHaSensors, startHaEventSubscription } = require('./lib/ha');
 const taskRouter                                   = require('./routes/tasks');
 const settingsRouter                               = require('./routes/settings');
 const statsRouter                                  = require('./routes/stats');
+const calendarRouter                               = require('./routes/calendar');
 require('./cron');
 
 const app  = express();
@@ -18,6 +19,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/api/tasks', taskRouter);
 app.use('/api',       settingsRouter);
 app.use('/api',       statsRouter);
+app.use('/api',       calendarRouter);
 
 applyHaOptions();
 app.listen(PORT, () => {

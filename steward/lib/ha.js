@@ -1,9 +1,9 @@
 const https = require('https');
 const http  = require('http');
 const { v4: uuidv4 } = require('uuid');
-const { readData, writeData } = require('./data');
+const { readData, writeData, isOnVacation } = require('./data');
 const { getScheduledDueAt, getIntervalMs, isDue, isSoon, nextDueDate } = require('./time');
-const { sendHaNotify, sendEmail, scheduleNotification } = require('./notifications');
+const { sendHaNotify, sendEmail, scheduleNotification, notifyOthersOnCompletion } = require('./notifications');
 
 function request(haUrl, haToken, options, body = null) {
   const url = new URL(options.path, haUrl);
@@ -50,10 +50,7 @@ async function updateHaSensors() {
   const rooms = data.settings.rooms || [];
   const tz    = data.settings.timezone || null;
 
-  const nowDate = new Date();
-  const vacFrom = data.settings.vacationFrom ? new Date(data.settings.vacationFrom) : null;
-  const vacTo   = data.settings.vacationTo   ? new Date(data.settings.vacationTo + 'T23:59:59') : null;
-  const onVacation = vacFrom && vacTo && nowDate >= vacFrom && nowDate <= vacTo;
+  const onVacation = isOnVacation(data.settings);
 
   const dueTasks  = onVacation ? [] : tasks.filter(t => isDue(t, tz));
   const soonTasks = onVacation ? [] : tasks.filter(t => !isDue(t, tz) && isSoon(t, tz));
@@ -123,7 +120,7 @@ async function checkHaTriggers() {
         dueTime:            trigger.dueTime  || null,
         notifyOffset:       trigger.notifyOffset != null ? Number(trigger.notifyOffset) : 0,
         snoozedUntil: null, lastComment: null, lastCompleted: null, completedBy: null, lastNotified: null,
-        notifications:      trigger.notifications || { email: false, ha: true }
+        notify:             trigger.notify !== false
       };
       data.tasks.push(task);
       console.log(`[HA Trigger] "${task.name}" fired by ${trigger.entityId} → ${current}`);
@@ -133,8 +130,8 @@ async function checkHaTriggers() {
       const timeStr  = task.dueTime ? ` at ${task.dueTime}` : '';
       const msg      = `"${task.name}" is due${timeStr}`;
       for (const userId of targets) {
-        if (task.notifications.ha)    await sendHaNotify(data, userId, '🏠 New task', msg);
-        if (task.notifications.email) { try { await sendEmail(data, userId, task.name, msg); } catch(e) {} }
+        await sendHaNotify(data, userId, '🏠 New task', msg);
+        try { await sendEmail(data, userId, task.name, msg); } catch(e) {}
       }
       task.lastNotified = new Date().toISOString();
     }
@@ -230,6 +227,7 @@ function handleNotificationAction(eventData) {
       if (!data.completions) data.completions = [];
       data.completions.push({ id: uuidv4(), taskId: task.id, taskName: task.name, userId, points, date: task.lastCompleted, comment: null });
     }
+    notifyOthersOnCompletion(data, task, userId);
     if (task.dueDate) {
       if (!data.archive) data.archive = [];
       data.archive.push({ id: uuidv4(), name: task.name, room: task.room, assignee: task.assignee, priority: task.priority || 'normal', dueDate: task.dueDate, dueTime: task.dueTime, completedBy: userId, archivedAt: task.lastCompleted, comment: null });

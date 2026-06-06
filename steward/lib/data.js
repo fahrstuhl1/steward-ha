@@ -61,8 +61,22 @@ function migrateData(data) {
     changed = true;
   }
 
+  for (const task of data.tasks) {
+    if (task.notifications !== undefined && task.notify === undefined) {
+      task.notify = !!(task.notifications.ha || task.notifications.email);
+      delete task.notifications;
+      changed = true;
+    }
+  }
+
   if (changed) atomicWrite(data);
   return data;
 }
 
-module.exports = { DATA_FILE, readData, writeData, atomicWrite, migrateData, applyHaOptions };
+function isOnVacation(settings) {
+  const vacFrom = settings.vacationFrom ? new Date(settings.vacationFrom)              : null;
+  const vacTo   = settings.vacationTo   ? new Date(settings.vacationTo + 'T23:59:59') : null;
+  return !!(vacFrom && vacTo && new Date() >= vacFrom && new Date() <= vacTo);
+}
+
+module.exports = { DATA_FILE, readData, writeData, atomicWrite, migrateData, applyHaOptions, isOnVacation };

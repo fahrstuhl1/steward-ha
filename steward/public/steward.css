@@ -39,6 +39,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI'
 .archive-name { font-size:0.86rem; font-weight:500; }
 .archive-meta { font-size:0.72rem; color:var(--text3); margin-top:2px; }
 .archive-comment { font-size:0.7rem; color:var(--text3); font-style:italic; margin-top:2px; }
+.archive-photo { display:block; max-width:160px; max-height:120px; border-radius:var(--r-sm); margin-top:6px; object-fit:cover; }
 .plan-day { margin-bottom:16px; }
 .plan-day-header { font-size:0.68rem; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; color:var(--text3); padding:6px 2px 4px; border-bottom:1px solid var(--border); margin-bottom:6px; display:flex; justify-content:space-between; }
 .plan-day-header .plan-day-count { font-size:0.65rem; font-weight:600; padding:1px 6px; border-radius:6px; background:rgba(91,156,246,0.15); color:#5b9cf6; }
@@ -204,6 +205,16 @@ main { max-width: 640px; margin: 0 auto; padding: 16px 14px 60px; }
 .flex1 { flex: 1 !important; }
 .del-btn { background: none; border: none; color: var(--text3); cursor: pointer; padding: 3px 7px; border-radius: 5px; font-size: 0.75rem; transition: color 0.1s; flex-shrink: 0; }
 .del-btn:hover { color: var(--red); }
+.user-card { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 8px 10px; }
+.user-card-top { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
+.user-card-top input[type=color] { width: 26px !important; height: 26px !important; padding: 0 !important; border: none !important; border-radius: 50% !important; cursor: pointer; flex-shrink: 0; background: none !important; }
+.user-name-input { flex: 1; background: transparent !important; border: none !important; border-bottom: 1px solid var(--border2) !important; border-radius: 0 !important; padding: 2px 2px !important; font-size: 0.9rem !important; font-weight: 500 !important; color: var(--text) !important; outline: none; min-width: 0; }
+.user-name-input:focus { border-bottom-color: #5b9cf6 !important; }
+.user-card-fields { display: flex; flex-direction: column; gap: 5px; }
+.user-field-row { display: flex; align-items: center; gap: 8px; }
+.user-field-label { font-size: 0.6rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text3); width: 58px; flex-shrink: 0; }
+.user-field-row input { flex: 1; background: var(--surface) !important; border: 1px solid var(--border) !important; border-radius: 4px !important; padding: 4px 7px !important; font-size: 0.8rem !important; color: var(--text) !important; outline: none; min-width: 0; }
+.user-field-row input:focus { border-color: #5b9cf6 !important; }
 .add-row-btn { width: 100%; padding: 8px; background: transparent; border: 1px dashed var(--border2); border-radius: var(--r-sm); color: var(--text3); font-size: 0.8rem; cursor: pointer; transition: all 0.12s; }
 .add-row-btn:hover { border-color: var(--text2); color: var(--text2); }
 .trigger-card { background:var(--surface2); border:1px solid var(--border); border-radius:var(--r-sm); padding:10px; margin-bottom:8px; }
@@ -224,6 +235,13 @@ main { max-width: 640px; margin: 0 auto; padding: 16px 14px 60px; }
 .view-back-label { font-size:0.78rem; font-weight:600; color:var(--text); }
 .snooze-hint { font-size:0.68rem; color:#fb923c; font-style:italic; }
 .comment-text { font-size:0.7rem; color:var(--text3); font-style:italic; margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:200px; }
+.subtask-list { display:flex; flex-direction:column; gap:3px; margin-top:6px; }
+.subtask-item { display:flex; align-items:center; gap:6px; font-size:0.76rem; color:var(--text2); cursor:pointer; }
+.subtask-item input[type=checkbox] { cursor:pointer; }
+.subtask-item.subtask-done span { color:var(--text3); text-decoration:line-through; }
+.subtask-input-row { display:flex; align-items:center; gap:6px; margin-bottom:5px; }
+.subtask-input-row input[type=text] { flex:1; }
+.subtask-input-row input[type=checkbox] { cursor:pointer; flex-shrink:0; }
 .search-bar { display:none; padding:0 16px 8px; }
 .search-bar.open { display:block; }
 .search-input { width:100%; padding:8px 12px; background:var(--surface2); border:1px solid var(--border2); border-radius:var(--r-sm); font-size:0.86rem; color:var(--text); outline:none; }

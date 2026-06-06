@@ -1,5 +1,5 @@
 const cron = require('node-cron');
-const { readData, writeData } = require('./lib/data');
+const { readData, writeData, isOnVacation } = require('./lib/data');
 const { getNotifyAt, isDue } = require('./lib/time');
 const { sendHaNotify, sendEmail } = require('./lib/notifications');
 const { updateHaSensors, checkHaTriggers } = require('./lib/ha');
@@ -7,17 +7,13 @@ const { updateHaSensors, checkHaTriggers } = require('./lib/ha');
 // 15-minute fallback: send missed notifications + 24h repeat for still-pending tasks
 cron.schedule('*/15 * * * *', async () => {
   const data = readData();
-  // Skip all notifications while vacation mode is active
-  const nowDate = new Date();
-  const vacFrom = data.settings.vacationFrom ? new Date(data.settings.vacationFrom) : null;
-  const vacTo   = data.settings.vacationTo   ? new Date(data.settings.vacationTo + 'T23:59:59') : null;
-  if (vacFrom && vacTo && nowDate >= vacFrom && nowDate <= vacTo) return;
+  if (isOnVacation(data.settings)) return;
 
   let changed = false;
   const now = Date.now();
 
   for (const task of data.tasks) {
-    if (!task.notifications.email && !task.notifications.ha) continue;
+    if (task.notify === false) continue;
     if (task.snoozedUntil && new Date(task.snoozedUntil).getTime() > now) continue;
 
     const cycleStart      = task.lastCompleted ? new Date(task.lastCompleted).getTime() : 0;
@@ -30,23 +26,23 @@ cron.schedule('*/15 * * * *', async () => {
       const soon     = task.notifyOffset && task.notifyOffset > 0;
       const msg      = `"${task.name}" is${soon ? ' almost' : ''} due${timeStr}`;
       for (const userId of targets) {
-        if (task.notifications.ha)    await sendHaNotify(data, userId, '🏠 Task due', msg, task.id);
-        if (task.notifications.email) { try { await sendEmail(data, userId, task.name, msg); } catch(e) {} }
+        await sendHaNotify(data, userId, '🏠 Task due', msg, task.id);
+        try { await sendEmail(data, userId, task.name, msg); } catch(e) {}
       }
       task.lastNotified = new Date().toISOString();
       changed = true;
 
     } else if (alreadyNotified && isDue(task, data.settings.timezone || null)) {
       const hoursSince = (now - new Date(task.lastNotified).getTime()) / 3600000;
-      if (hoursSince >= 24) {
+      if (hoursSince >= (data.settings.repeatNotifyHours ?? 24)) {
         const allUsers = data.settings.users || [];
         const targets  = task.assignee === 'alle' ? allUsers.map(u => u.id) : [task.assignee];
         const timeStr  = task.dueTime ? ` at ${task.dueTime}` : '';
         const msg      = `⚠️ Still pending: "${task.name}"${timeStr}`;
         console.log(`[Notify] Repeat: ${msg}`);
         for (const userId of targets) {
-          if (task.notifications.ha)    await sendHaNotify(data, userId, '🏠 Reminder', msg, task.id);
-          if (task.notifications.email) { try { await sendEmail(data, userId, task.name, msg); } catch(e) {} }
+          await sendHaNotify(data, userId, '🏠 Reminder', msg, task.id);
+          try { await sendEmail(data, userId, task.name, msg); } catch(e) {}
         }
         task.lastNotified = new Date().toISOString();
         changed = true;

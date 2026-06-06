@@ -6,6 +6,7 @@ let gamificationEnabled=true, searchOpen=false, calendarOpen=false;
 let planningOpen=false, archiveOpen=false, planningDays=7;
 let calYear=new Date().getFullYear(), calMonth=new Date().getMonth(), calSelectedDay=null;
 let vacationActive=false, vacationToDate=null, pendingPhoto=null, wasLongPress=false;
+let addonBaseUrl = '';
 
 const PRIORITY_ORDER = { high:0, normal:1, low:2 };
 
@@ -205,7 +206,8 @@ async function loadSettings() {
   users = (s.users && s.users.length) ? s.users : [];
   rooms = (s.rooms && s.rooms.length) ? s.rooms : DEFAULT_ROOMS;
   if (!users.find(u => u.id === currentView)) { currentView = users.length === 1 ? users[0].id : 'alle'; }
-  planningDays = s.planningDays ?? 7;
+  planningDays  = s.planningDays ?? 7;
+  addonBaseUrl  = (s.addonUrl || s.haUrl || '').replace(/\/$/, '');
   if (s.theme) applyTheme(s.theme);
   renderPersonTabs();
   renderLogoSub();
@@ -244,6 +246,13 @@ function renderCalendar() {
     document.getElementById('calTaskList').innerHTML = dayTasks.length
       ? `<div style="font-size:0.65rem;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);margin:12px 0 8px">${MONTHS[calMonth]} ${calSelectedDay}</div>` +
         `<div class="task-list" style="border:1px solid var(--border);border-radius:var(--r);overflow:hidden">${dayTasks.map(taskCard).join('')}</div>` : '';
+  }
+  const calBar = document.getElementById('calIcalBar');
+  if (addonBaseUrl) {
+    document.getElementById('calIcalUrl').value = addonBaseUrl + '/api/calendar.ics';
+    calBar.style.display = '';
+  } else {
+    calBar.style.display = 'none';
   }
 }
 
@@ -397,7 +406,7 @@ async function renderArchiveView() {
       const u = users.find(u => u.id === e.completedBy);
       const date = new Date(e.archivedAt).toLocaleDateString('en-GB', {day:'2-digit',month:'2-digit',year:'numeric'});
       const room = rooms.find(r => r.id === e.room);
-      return `<div class="archive-item"><div class="archive-icon">${PRIORITY_ICON[e.priority||'normal']}</div><div class="archive-info"><div class="archive-name">${e.name}</div><div class="archive-meta">${room ? room.icon+' '+room.name : e.room} · ${u ? u.name : e.completedBy} · ${date}</div>${e.comment ? `<div class="archive-comment">💬 ${e.comment}</div>` : ''}</div></div>`;
+      return `<div class="archive-item"><div class="archive-icon">${PRIORITY_ICON[e.priority||'normal']}</div><div class="archive-info"><div class="archive-name">${e.name}</div><div class="archive-meta">${room ? room.icon+' '+room.name : e.room} · ${u ? u.name : e.completedBy} · ${date}</div>${e.comment ? `<div class="archive-comment">💬 ${e.comment}</div>` : ''}${e.photo ? `<img class="archive-photo" src="${e.photo}" alt="" loading="lazy">` : ''}</div></div>`;
     }).join('');
 }
 
@@ -507,15 +516,33 @@ function taskCard(t) {
   const nextDueStr    = formatNextDue(t.nextDueData) || t.nextDue;
   const waitingLabel  = isWaiting ? `<span class="due-label muted">⏳ ${L('state.waiting')} · ${nextDueStr}</span>` : `<span class="due-label ${dueClass}">${nextDueStr}</span>`;
 
+  const subtasks      = Array.isArray(t.subtasks) ? t.subtasks : [];
+  const subtaskHint   = subtasks.length ? ` <span class="meta-dot">·</span><span class="meta-text">☑ ${subtasks.filter(s=>s.done).length}/${subtasks.length}</span>` : '';
+  const subtaskList   = subtasks.length ? `<div class="subtask-list" onclick="event.stopPropagation()">${subtasks.map(s => `<label class="subtask-item ${s.done?'subtask-done':''}"><input type="checkbox" ${s.done?'checked':''} onchange="toggleSubtask('${t.id}','${s.id}',this)"><span>${s.name}</span></label>`).join('')}</div>` : '';
+
   return `<div class="task-card ${cardClass}" data-id="${t.id}">
     <button class="check-btn" onclick="toggleComplete('${t.id}')">${checkIcon}</button>
     <div class="task-info" onclick="onTaskInfoClick('${t.id}')" style="cursor:pointer">
       <div class="task-name">${priorityDot}${t.name}</div>
-      <div class="task-meta">${badgeHtml}<span class="meta-dot">·</span><span class="meta-text">${intervalLabel}</span><span class="meta-dot">·</span>${waitingLabel}${notifyHint}</div>
-      ${snoozeHint}${commentLine}
+      <div class="task-meta">${badgeHtml}<span class="meta-dot">·</span><span class="meta-text">${intervalLabel}</span><span class="meta-dot">·</span>${waitingLabel}${notifyHint}${subtaskHint}</div>
+      ${snoozeHint}${commentLine}${subtaskList}
     </div>
     <div class="task-actions"><button class="task-action-btn" onclick="openCtxMenu(event,'${t.id}')" title="${L('btn.more')}">···</button></div>
   </div>`;
+}
+
+async function toggleSubtask(taskId, subId, checkbox) {
+  checkbox.disabled = true;
+  try {
+    const r = await fetch(`api/tasks/${taskId}/subtasks/${subId}/toggle`, { method: 'POST' });
+    const res = await r.json();
+    if (!r.ok || !res.success) throw new Error(res.error || 'Toggle failed');
+    const task = tasks.find(t => t.id === taskId);
+    const sub  = task?.subtasks?.find(s => s.id === subId);
+    if (sub) sub.done = res.done;
+    checkbox.closest('.subtask-item')?.classList.toggle('subtask-done', res.done);
+  } catch(e) { checkbox.checked = !checkbox.checked; }
+  checkbox.disabled = false;
 }
 
 async function toggleComplete(id) {
@@ -662,6 +689,11 @@ function setDueType(type) {
   }
 }
 
+function updateNotifyVisibility() {
+  const enabled = document.getElementById('notifEnabled').checked;
+  document.getElementById('notifyTimingSection').style.display = enabled ? '' : 'none';
+}
+
 function toggleMoreOptions() {
   const panel   = document.getElementById('moreOptionsPanel');
   const chevron = document.getElementById('moreOptionsChevron');
@@ -674,6 +706,7 @@ function toggleMoreOptions() {
     const isInterval = document.getElementById('dueBtnInterval').classList.contains('active');
     document.getElementById('scheduleModeRow').style.display = isInterval ? '' : 'none';
     document.getElementById('startDateRow').style.display    = isInterval ? '' : 'none';
+    updateNotifyVisibility();
   }
 }
 
@@ -718,8 +751,9 @@ function openAddModal() {
   document.getElementById('taskNotifyOffset').value='0';
   document.getElementById('taskNotifyTimeWeekday').value='';
   document.getElementById('taskNotifyTimeWeekend').value='';
-  document.getElementById('notifHa').checked=true;
-  document.getElementById('notifEmail').checked=false;
+  document.getElementById('notifEnabled').checked=true;
+  updateNotifyVisibility();
+  document.getElementById('subtaskInputList').innerHTML='';
   // reset progressive disclosure
   document.getElementById('moreOptionsPanel').style.display='none';
   document.getElementById('moreOptionsChevron').textContent='▾';
@@ -750,9 +784,10 @@ function openEditModal(id) {
   document.getElementById('taskNotifyOffset').value=String(task.notifyOffset||0);
   document.getElementById('taskNotifyTimeWeekday').value=task.notifyTimeWeekday||'';
   document.getElementById('taskNotifyTimeWeekend').value=task.notifyTimeWeekend||'';
-  document.getElementById('notifHa').checked=(task.notifications?.ha)||false;
-  document.getElementById('notifEmail').checked=(task.notifications?.email)||false;
-
+  document.getElementById('notifEnabled').checked=task.notify !== false;
+  updateNotifyVisibility();
+  document.getElementById('subtaskInputList').innerHTML='';
+  (task.subtasks||[]).forEach(s => addSubtaskInput(s.name, s.id, s.done));
   setDueType(task.dueDate ? 'fixed' : 'interval');
   updateIntervalUI();
   _initIntervalChips();
@@ -763,6 +798,24 @@ function openEditModal(id) {
 }
 
 function closeTaskModal() { document.getElementById('taskModal').classList.remove('open'); }
+
+function addSubtaskInput(name='', id=null, done=false) {
+  const row = document.createElement('div');
+  row.className = 'subtask-input-row';
+  row.dataset.id = id || `sub_${Date.now()}_${Math.random().toString(36).slice(2,7)}`;
+  row.innerHTML = `<input type="checkbox" class="subtask-done-check" ${done?'checked':''}><input type="text" class="subtask-name-input" placeholder="${L('placeholder.subtask')}" value="${name.replace(/"/g,'&quot;')}"><button type="button" class="del-btn" onclick="this.closest('.subtask-input-row').remove()">✕</button>`;
+  document.getElementById('subtaskInputList').appendChild(row);
+}
+
+function gatherSubtasks() {
+  return [...document.querySelectorAll('#subtaskInputList .subtask-input-row')]
+    .map(row => ({
+      id:   row.dataset.id,
+      name: row.querySelector('.subtask-name-input').value.trim(),
+      done: row.querySelector('.subtask-done-check').checked
+    }))
+    .filter(s => s.name);
+}
 
 async function saveTask() {
   const mode = document.getElementById('dueBtnFixed').classList.contains('active') ? 'fixed' : 'interval';
@@ -780,7 +833,8 @@ async function saveTask() {
     notifyOffset:         Number(document.getElementById('taskNotifyOffset').value)||0,
     notifyTimeWeekday:    document.getElementById('taskNotifyTimeWeekday').value||null,
     notifyTimeWeekend:    document.getElementById('taskNotifyTimeWeekend').value||null,
-    notifications: { ha: document.getElementById('notifHa').checked, email: document.getElementById('notifEmail').checked }
+    notify: document.getElementById('notifEnabled').checked,
+    subtasks: gatherSubtasks()
   };
   if(!body.name) { alert(L('alert.no_name')); return; }
   const saveBtn = document.querySelector('#taskModal .btn-primary');
@@ -793,13 +847,23 @@ async function saveTask() {
 }
 
 function renderUserList() {
-  document.getElementById('userList').innerHTML = users.map((u,i) => `
-    <div class="list-row">
-      <input type="color" value="${u.color}" oninput="users[${i}].color=this.value" title="Color" />
-      <input class="flex1" type="text" value="${u.name}" placeholder="Name" oninput="users[${i}].name=this.value" />
-      <input class="flex1" type="email" value="${u.email||''}" placeholder="Email" oninput="users[${i}].email=this.value" />
-      <input class="flex1" type="text" value="${u.haService||''}" placeholder="HA service (e.g. mobile_app_phone)" oninput="users[${i}].haService=this.value" />
-      <button class="del-btn" onclick="removeUser(${i})">✕</button>
+  document.getElementById('userList').innerHTML = users.map((u, i) => `
+    <div class="user-card">
+      <div class="user-card-top">
+        <input type="color" value="${u.color}" oninput="users[${i}].color=this.value" title="Color" />
+        <input class="user-name-input" type="text" value="${u.name}" placeholder="Name" oninput="users[${i}].name=this.value" />
+        <button class="del-btn" onclick="removeUser(${i})">✕</button>
+      </div>
+      <div class="user-card-fields">
+        <div class="user-field-row">
+          <span class="user-field-label">Email</span>
+          <input type="email" value="${u.email || ''}" placeholder="name@example.com" oninput="users[${i}].email=this.value" />
+        </div>
+        <div class="user-field-row">
+          <span class="user-field-label">HA service</span>
+          <input type="text" value="${u.haService || ''}" placeholder="mobile_app_phone" oninput="users[${i}].haService=this.value" />
+        </div>
+      </div>
     </div>`
   ).join('');
 }
@@ -849,8 +913,7 @@ function renderTriggerList() {
         <div><label>Notify</label><select onchange="triggers[${i}].notifyOffset=Number(this.value)"><option value="0" ${(t.notifyOffset||0)===0?'selected':''}>Immediately</option><option value="15" ${t.notifyOffset===15?'selected':''}>15 min before</option><option value="30" ${t.notifyOffset===30?'selected':''}>30 min before</option><option value="60" ${t.notifyOffset===60?'selected':''}>1 hr before</option></select></div>
       </div>
       <div style="display:flex;gap:12px;margin-top:8px;padding:0 2px;">
-        <label style="display:flex;align-items:center;gap:6px;font-size:0.78rem;color:var(--text2);cursor:pointer;"><input type="checkbox" ${t.notifications?.ha?'checked':''} onchange="triggers[${i}].notifications={...triggers[${i}].notifications,ha:this.checked}"> HA Push</label>
-        <label style="display:flex;align-items:center;gap:6px;font-size:0.78rem;color:var(--text2);cursor:pointer;"><input type="checkbox" ${t.notifications?.email?'checked':''} onchange="triggers[${i}].notifications={...triggers[${i}].notifications,email:this.checked}"> Email</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:0.78rem;color:var(--text2);cursor:pointer;"><input type="checkbox" ${t.notify!==false?'checked':''} onchange="triggers[${i}].notify=this.checked"> Notify</label>
       </div>
       ${t.lastState?`<div style="margin-top:6px;font-size:0.7rem;color:var(--text3);">Last state: <strong style="color:var(--text2)">${t.lastState}</strong></div>`:''}
     </div>`
@@ -858,7 +921,7 @@ function renderTriggerList() {
 }
 
 function addTriggerRow() {
-  triggers.push({ id:'trigger_'+Date.now(), enabled:true, entityId:'', toState:'', taskName:'', assignee:'alle', room:'general', dueTime:null, notifyOffset:0, lastState:null, notifications:{email:false,ha:true} });
+  triggers.push({ id:'trigger_'+Date.now(), enabled:true, entityId:'', toState:'', taskName:'', assignee:'alle', room:'general', dueTime:null, notifyOffset:0, lastState:null, notify:true });
   renderTriggerList();
 }
 function removeTrigger(i) { triggers.splice(i,1); renderTriggerList(); }
@@ -888,11 +951,17 @@ async function openSettings() {
   document.getElementById('timezoneDisplay').textContent = s.timezone || 'UTC';
   document.getElementById('gamificationToggle').checked = s.gamificationEnabled !== false;
   document.getElementById('weeklySummaryToggle').checked = s.weeklySummaryEnabled !== false;
+  document.getElementById('completionNotifyToggle').checked = s.completionNotify !== false;
+  document.getElementById('repeatNotifyHours').value = s.repeatNotifyHours ?? 24;
   document.getElementById('vacationFrom').value = s.vacationFrom || '';
   document.getElementById('vacationTo').value   = s.vacationTo   || '';
   document.getElementById('haUrl').value     = s.haUrl    || '';
   document.getElementById('haToken').value   = '';
   document.getElementById('addonUrl').value  = s.addonUrl || '';
+  const baseUrl = (s.addonUrl || s.haUrl || '').replace(/\/$/, '');
+  document.getElementById('icalUrl').value        = baseUrl ? baseUrl + '/api/calendar.ics' : '';
+  document.getElementById('icalUrl').placeholder  = baseUrl ? '' : 'Set Addon URL above first';
+  document.getElementById('icalCopyBtn').disabled = !baseUrl;
   document.getElementById('gmailUser').value = s.gmailUser || '';
   document.getElementById('gmailPass').value = '';
   renderUserList(); renderRoomList(); renderTriggerList();
@@ -901,6 +970,16 @@ async function openSettings() {
 }
 
 function closeSettings() { document.getElementById('settingsModal').classList.remove('open'); }
+
+function copyIcalUrl() {
+  const el = document.getElementById('icalUrl');
+  if (navigator.clipboard) { navigator.clipboard.writeText(el.value); } else { el.select(); document.execCommand('copy'); }
+}
+
+function copyCalIcalUrl() {
+  const el = document.getElementById('calIcalUrl');
+  if (navigator.clipboard) { navigator.clipboard.writeText(el.value); } else { el.select(); document.execCommand('copy'); }
+}
 
 async function syncTimezoneFromHA() {
   try {
@@ -925,6 +1004,8 @@ async function saveSettings() {
     timezone:           document.getElementById('settingsTimezone').value || 'UTC',
     gamificationEnabled:  document.getElementById('gamificationToggle').checked,
     weeklySummaryEnabled: document.getElementById('weeklySummaryToggle').checked,
+    completionNotify:     document.getElementById('completionNotifyToggle').checked,
+    repeatNotifyHours:    Number(document.getElementById('repeatNotifyHours').value) || 24,
     vacationFrom:         document.getElementById('vacationFrom').value || null,
     vacationTo:           document.getElementById('vacationTo').value   || null,
     haUrl:              document.getElementById('haUrl').value.trim(),
@@ -1119,7 +1200,7 @@ async function submitNlp() {
     assignee:  p.assignee || (currentView !== 'alle' ? currentView : (users[0]?.id || 'alle')),
     room:      p.room     || (currentGroup !== 'alle' ? currentGroup : 'general'),
     priority:  'normal',
-    notifications: { ha: true, email: false }
+    notify: true
   };
   const btn = document.querySelector('#nlpModal .btn-primary');
   btnLoading(btn, true);

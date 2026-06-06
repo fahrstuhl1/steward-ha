@@ -77,7 +77,7 @@ router.post('/webhook/create-task', (req, res) => {
   const data   = readData();
   const secret = data.settings.webhookSecret;
   if (secret && req.body.secret !== secret) return res.status(401).json({ error: 'Invalid secret' });
-  const { name, assignee, room, interval, startDate, dueDate, dueTime, notifyOffset, notifications } = req.body;
+  const { name, assignee, room, interval, startDate, dueDate, dueTime, notifyOffset, notify } = req.body;
   if (!name?.trim()) return res.status(400).json({ error: 'Required field "name" missing' });
   const task = {
     id: uuidv4(), name: name.trim(),
@@ -86,8 +86,9 @@ router.post('/webhook/create-task', (req, res) => {
     createdAt: new Date().toISOString(), nextDueAt: null,
     startDate: startDate || null, dueDate: dueDate || null, dueTime: dueTime || null,
     notifyOffset: notifyOffset != null ? Number(notifyOffset) : 0,
+    subtasks: [],
     snoozedUntil: null, lastComment: null, lastCompleted: null, completedBy: null, lastNotified: null,
-    notifications: notifications || { email: false, ha: true }
+    notify: notify !== false
   };
   data.tasks.push(task); writeData(data);
   const { scheduleNotification } = require('../lib/notifications');

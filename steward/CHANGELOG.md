@@ -1,5 +1,44 @@
 # Changelog
 
+## 1.6.8
+### New Features
+- **Sub-Tasks / Checklisten**: Aufgaben können jetzt eine Checkliste mit einzelnen Schritten bekommen (im Mehr-Optionen-Bereich des Aufgaben-Dialogs); Fortschritt wird auf der Task-Karte angezeigt und einzelne Schritte können dort direkt abgehakt werden
+- **Benachrichtigung bei Erledigung durch andere**: Optional (standardmäßig an) werden alle anderen Haushaltsmitglieder per Push/E-Mail informiert, wenn jemand eine Aufgabe abschließt — abschaltbar in den Einstellungen
+- **Wiederkehrende Erinnerung konfigurierbar**: Das Intervall für wiederholte „noch ausstehend"-Erinnerungen ist jetzt in den Einstellungen einstellbar (Standard weiterhin 24h) statt fest codiert
+- **Foto im Archiv**: Fotos, die beim Abschließen einer einmaligen Aufgabe hochgeladen wurden, werden jetzt auch in der Archiv-Ansicht angezeigt
+
+### Fixes
+- README-Versionsbadge zeigte eine veraltete Versionsnummer
+- Veraltete `notifications`-Struktur im Webhook-Task-Endpunkt auf das aktuelle `notify`-Boolean-Modell umgestellt
+
+---
+
+## 1.6.7
+### Improvements
+- **Lovelace Card: Aufgaben direkt abhaken** — neues optionales Config-Feld `complete_as: <userId>`; zeigt pro Task-Zeile einen ✓-Button, der die Aufgabe ohne Öffnen der Steward-UI als erledigt markiert; fällt auf `filter.person` zurück wenn `complete_as` nicht gesetzt ist
+
+---
+
+## 1.6.6
+### Improvements
+- **Einzel-Benachrichtigungs-Toggle**: Pro Aufgabe gibt es jetzt nur noch einen „Notify"-Toggle (an/aus, Standard: an) statt separater HA- und E-Mail-Checkboxen — welche Kanäle genutzt werden, bestimmt allein die Nutzerkonfiguration
+- **Migration**: Bestehende Tasks mit `notifications.ha/email` werden beim Start automatisch auf `notify: boolean` migriert
+- **Kalender-iCal-URL**: Auch in der Kalenderansicht direkt zugänglich (Footer mit Copy-Button)
+- **Benutzer-Karten**: Nutzereinstellungen werden als lesbare Karten dargestellt statt als gequetschte Zeile
+- **Einstellungen neu sortiert**: Allgemein-Tab → Timezone, Urlaubsmodus, Gamification, Wochenzusammenfassung, Archiv; Aufgaben-Modal → Benachrichtigung zuerst, Zeitfelder nur wenn Notify aktiv
+
+---
+
+## 1.6.5
+### New Features
+- **iCal Calendar Feed** — neuer Endpunkt `GET /api/calendar.ics` liefert alle anstehenden Tasks als RFC 5545 iCal-Feed; in HA unter Settings → Integrations → Calendar (iCal) eintragen
+- Aufgaben mit Uhrzeit erscheinen als Termin, Aufgaben ohne Uhrzeit als Ganztages-Ereignis
+- Wiederkehrende Tasks werden 90 Tage im Voraus expandiert (max. 52 Vorkommen)
+- Priorität wird als iCal PRIORITY (1/5/9) übertragen
+- URL wird in den Einstellungen (HA-Tab) angezeigt und kann per Klick kopiert werden
+
+---
+
 ## 1.6.4
 ### Improvements
 - **Fälligkeits-Logik**: `isSoon` (gelb) greift jetzt nur noch wenn die Task am **selben Kalendertag** fällig ist — kein 12h-Fenster-Bleed-over mehr in den Vortag

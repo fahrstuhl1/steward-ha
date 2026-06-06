@@ -9,11 +9,12 @@
  *
  *   2. Add the card to a dashboard:
  *      type: custom:steward-task-card
- *      url: http://<ha-ip>:3456        # Steward base URL
- *      title: Tasks                    # optional
+ *      url: http://homeassistant.local:3456
+ *      title: Tasks           # optional
+ *      complete_as: user1     # optional — userId for the ✓ button
  *      filter:
- *        person: user1                 # optional — assignee id
- *        room: kitchen                 # optional — room id
+ *        person: user1        # optional — only show tasks for this assignee
+ *        room: kitchen        # optional — only show tasks in this room
  */
 
 const CARD_TAG = 'steward-task-card';
@@ -30,6 +31,30 @@ const css = `
   .dot.due-soon { background: var(--warning-color, #facc15); }
   .task-name { flex: 1; font-size: 0.9rem; }
   .task-meta { font-size: 0.75rem; color: var(--secondary-text-color, #9ca3af); white-space: nowrap; }
+  .check-btn {
+    flex-shrink: 0;
+    width: 28px; height: 28px;
+    border: 1.5px solid var(--divider-color, rgba(255,255,255,0.2));
+    border-radius: 50%;
+    background: transparent;
+    color: var(--primary-text-color, #e5e7eb);
+    font-size: 0.85rem;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+    padding: 0;
+  }
+  .check-btn:hover:not(:disabled) {
+    background: var(--success-color, #4ade80);
+    border-color: var(--success-color, #4ade80);
+    color: #fff;
+  }
+  .check-btn:disabled { opacity: 0.4; cursor: default; }
+  .check-btn.done {
+    background: var(--success-color, #4ade80);
+    border-color: var(--success-color, #4ade80);
+    color: #fff;
+  }
   .empty { padding: 12px 16px; font-size: 0.88rem; color: var(--secondary-text-color, #9ca3af); }
   .error { padding: 12px 16px; font-size: 0.8rem; color: var(--error-color, #f87171); }
 `;
@@ -40,11 +65,13 @@ class StewardTaskCard extends HTMLElement {
     this.attachShadow({ mode: 'open' });
     this._config = null;
     this._interval = null;
+    this._userId = null;
   }
 
   setConfig(config) {
     if (!config.url) throw new Error('steward-task-card: "url" is required');
     this._config = config;
+    this._userId = config.complete_as || config.filter?.person || null;
     this._render([]);
     this._fetch();
     if (this._interval) clearInterval(this._interval);
@@ -75,14 +102,38 @@ class StewardTaskCard extends HTMLElement {
     }
   }
 
+  async _complete(taskId, btn) {
+    const url = this._config.url.replace(/\/$/, '');
+    btn.disabled = true;
+    try {
+      const res = await fetch(`${url}/api/tasks/${taskId}/complete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: this._userId }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      btn.classList.add('done');
+      btn.textContent = '✓';
+      setTimeout(() => this._fetch(), 600);
+    } catch (e) {
+      btn.disabled = false;
+      console.error('[steward-card] complete failed:', e.message);
+    }
+  }
+
   _render(tasks) {
     const title = this._config?.title ?? 'Steward';
-    this.shadowRoot.innerHTML = `
-      <style>${css}</style>
+    this.shadowRoot.innerHTML = `<style>${css}</style>
       <ha-card>
         <div class="card-header">${_esc(title)}</div>
         <div class="task-list">${this._taskHtml(tasks)}</div>
       </ha-card>`;
+
+    if (this._userId) {
+      this.shadowRoot.querySelectorAll('.check-btn').forEach(btn => {
+        btn.addEventListener('click', () => this._complete(btn.dataset.id, btn));
+      });
+    }
   }
 
   _taskHtml(tasks) {
@@ -90,10 +141,14 @@ class StewardTaskCard extends HTMLElement {
     return tasks.map(t => {
       const dotClass = t.isDue ? 'due-now' : 'due-soon';
       const meta = t.nextDue || '';
+      const btn = this._userId
+        ? `<button class="check-btn" data-id="${_esc(t.id)}" title="Mark as done">✓</button>`
+        : '';
       return `<div class="task-row">
         <span class="dot ${dotClass}"></span>
         <span class="task-name">${_esc(t.name)}</span>
         <span class="task-meta">${_esc(meta)}</span>
+        ${btn}
       </div>`;
     }).join('');
   }
@@ -104,7 +159,7 @@ class StewardTaskCard extends HTMLElement {
   }
 
   static getStubConfig() {
-    return { url: 'http://homeassistant.local:3456', title: 'Tasks', filter: {} };
+    return { url: 'http://homeassistant.local:3456', title: 'Tasks', complete_as: '', filter: {} };
   }
 }
 

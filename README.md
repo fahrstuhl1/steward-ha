@@ -1,5 +1,5 @@
 # 🏠 Steward — Home Assistant Add-on Repository
-![Version](https://img.shields.io/badge/version-1.6.4-blue?style=flat-square)
+![Version](https://img.shields.io/badge/version-1.6.8-blue?style=flat-square)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![HACS](https://img.shields.io/badge/HACS-Custom%20Repository-orange?style=flat-square)](https://hacs.xyz)
 
@@ -152,6 +152,12 @@ Automatically created sensors in HA (updated every 5 minutes):
 ### Calendar & Search
 - 📅 Monthly calendar view — tap a day to see tasks due on that date
 - 🔍 Real-time search — filter tasks by name or room
+
+### iCal Calendar Feed
+- Subscribe to `<addon-url>/api/calendar.ics` in HA (Settings → Integrations → Calendar → iCal)
+- Tasks with a time appear as timed events; tasks without appear as all-day events
+- Recurring tasks expanded 90 days ahead (max 52 occurrences)
+- URL shown in Settings → HA tab with one-click copy
 
 ### Display & UX
 - Filter by user and room
