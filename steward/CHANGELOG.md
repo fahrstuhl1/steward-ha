@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.6.2
+### Improvements
+- **UI-Lesbarkeit**: Person-Tabs als Pills statt Full-Width-Balken; Tab-Zeile bei Single-User ohne Gamification ausgeblendet
+- **Raumfilter**: Aktiver Tab jetzt mit blauem Akzent statt neutralem Grau
+- **„Wartend anzeigen"-Button**: Mehr Padding, sichtbarer Hintergrund und Border, blauer Hover-Effekt
+- **Section-Header**: Etwas fetter und heller (text2 statt text3)
+- **Task-Schrift**: 0.88 → 0.93 rem für bessere Lesbarkeit
+- **Badges und Meta-Text**: Leicht vergrößert (+0.02 rem, +1px Padding)
+- **Wartend-Platzhalter**: Kursiv entfernt
+
+---
+
 ## 1.6.1
 ### Bug Fixes
 - **NLP Quick-Add**: Einmalige Aufgaben (Datum erkannt) wurden mit `interval:'weekly'` statt `interval:'once'` gespeichert
