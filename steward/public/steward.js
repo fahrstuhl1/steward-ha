@@ -301,6 +301,8 @@ function renderLogoSub() { document.getElementById('logoSub').textContent = user
 function renderPersonTabs() {
   const tabs = document.getElementById('personTabs');
   const weekPts = statsData?.stats || [];
+  const hasMultipleTabs = users.length > 1 || gamificationEnabled;
+  tabs.style.display = hasMultipleTabs ? '' : 'none';
   tabs.innerHTML = users.map(u => {
     const pts = gamificationEnabled ? (weekPts.find(s=>s.userId===u.id)?.pointsWeek || 0) : 0;
     const badge = pts > 0 ? `<span class="points-badge">${pts}</span>` : '';
