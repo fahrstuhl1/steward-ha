@@ -6,6 +6,7 @@ let gamificationEnabled=true, searchOpen=false, calendarOpen=false;
 let planningOpen=false, archiveOpen=false, planningDays=7;
 let calYear=new Date().getFullYear(), calMonth=new Date().getMonth(), calSelectedDay=null;
 let vacationActive=false, vacationToDate=null, pendingPhoto=null, wasLongPress=false;
+let addonBaseUrl = '';
 
 const PRIORITY_ORDER = { high:0, normal:1, low:2 };
 
@@ -205,7 +206,8 @@ async function loadSettings() {
   users = (s.users && s.users.length) ? s.users : [];
   rooms = (s.rooms && s.rooms.length) ? s.rooms : DEFAULT_ROOMS;
   if (!users.find(u => u.id === currentView)) { currentView = users.length === 1 ? users[0].id : 'alle'; }
-  planningDays = s.planningDays ?? 7;
+  planningDays  = s.planningDays ?? 7;
+  addonBaseUrl  = (s.addonUrl || s.haUrl || '').replace(/\/$/, '');
   if (s.theme) applyTheme(s.theme);
   renderPersonTabs();
   renderLogoSub();
@@ -244,6 +246,13 @@ function renderCalendar() {
     document.getElementById('calTaskList').innerHTML = dayTasks.length
       ? `<div style="font-size:0.65rem;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);margin:12px 0 8px">${MONTHS[calMonth]} ${calSelectedDay}</div>` +
         `<div class="task-list" style="border:1px solid var(--border);border-radius:var(--r);overflow:hidden">${dayTasks.map(taskCard).join('')}</div>` : '';
+  }
+  const calBar = document.getElementById('calIcalBar');
+  if (addonBaseUrl) {
+    document.getElementById('calIcalUrl').value = addonBaseUrl + '/api/calendar.ics';
+    calBar.style.display = '';
+  } else {
+    calBar.style.display = 'none';
   }
 }
 
@@ -903,6 +912,11 @@ function closeSettings() { document.getElementById('settingsModal').classList.re
 
 function copyIcalUrl() {
   const el = document.getElementById('icalUrl');
+  if (navigator.clipboard) { navigator.clipboard.writeText(el.value); } else { el.select(); document.execCommand('copy'); }
+}
+
+function copyCalIcalUrl() {
+  const el = document.getElementById('calIcalUrl');
   if (navigator.clipboard) { navigator.clipboard.writeText(el.value); } else { el.select(); document.execCommand('copy'); }
 }
 
