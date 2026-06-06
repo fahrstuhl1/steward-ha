@@ -1,5 +1,44 @@
 # Changelog
 
+## 1.6.5
+### New Features
+- **iCal Calendar Feed** — neuer Endpunkt `GET /api/calendar.ics` liefert alle anstehenden Tasks als RFC 5545 iCal-Feed; in HA unter Settings → Integrations → Calendar (iCal) eintragen
+- Aufgaben mit Uhrzeit erscheinen als Termin, Aufgaben ohne Uhrzeit als Ganztages-Ereignis
+- Wiederkehrende Tasks werden 90 Tage im Voraus expandiert (max. 52 Vorkommen)
+- Priorität wird als iCal PRIORITY (1/5/9) übertragen
+- URL wird in den Einstellungen (HA-Tab) angezeigt und kann per Klick kopiert werden
+
+---
+
+## 1.6.4
+### Improvements
+- **Fälligkeits-Logik**: `isSoon` (gelb) greift jetzt nur noch wenn die Task am **selben Kalendertag** fällig ist — kein 12h-Fenster-Bleed-over mehr in den Vortag
+- **Grace Period**: Task wird erst **1 Stunde nach** der Fälligkeit rot — zwischen 09:00 und 10:00 bleibt sie gelb
+- **Timezone-aware**: Kalender-Tag-Vergleich nutzt die konfigurierte App-Timezone (statt fester UTC-Grenze)
+- **Konsistent**: Alle Aufrufe in Tasks-Route, HA-Sensoren, Cron und Lovelace-Karte nutzen dieselbe Logik
+
+---
+
+## 1.6.3
+### Improvements
+- **Wartend-Sektion**: Task-Namen werden als Chips angezeigt statt nur einem grauen Zähltext — Rauminhalt auf einen Blick sichtbar ohne Aufklappen
+- **„Wartend anzeigen"-Button**: Blauer Akzent-Stil (statt neutralem Grau) — deutlich auffälliger
+- **Section-Trenner**: Dünne Linie zwischen Raum-Sektionen für bessere Gliederung
+
+---
+
+## 1.6.2
+### Improvements
+- **UI-Lesbarkeit**: Person-Tabs als Pills statt Full-Width-Balken; Tab-Zeile bei Single-User ohne Gamification ausgeblendet
+- **Raumfilter**: Aktiver Tab jetzt mit blauem Akzent statt neutralem Grau
+- **„Wartend anzeigen"-Button**: Mehr Padding, sichtbarer Hintergrund und Border, blauer Hover-Effekt
+- **Section-Header**: Etwas fetter und heller (text2 statt text3)
+- **Task-Schrift**: 0.88 → 0.93 rem für bessere Lesbarkeit
+- **Badges und Meta-Text**: Leicht vergrößert (+0.02 rem, +1px Padding)
+- **Wartend-Platzhalter**: Kursiv entfernt
+
+---
+
 ## 1.6.1
 ### Bug Fixes
 - **NLP Quick-Add**: Einmalige Aufgaben (Datum erkannt) wurden mit `interval:'weekly'` statt `interval:'once'` gespeichert

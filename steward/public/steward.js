@@ -888,6 +888,8 @@ async function openSettings() {
   document.getElementById('haUrl').value     = s.haUrl    || '';
   document.getElementById('haToken').value   = '';
   document.getElementById('addonUrl').value  = s.addonUrl || '';
+  const baseUrl = (s.addonUrl || s.haUrl || '').replace(/\/$/, '');
+  document.getElementById('icalUrl').value   = baseUrl ? baseUrl + '/api/calendar.ics' : '(Set Addon URL in HA section first)';
   document.getElementById('gmailUser').value = s.gmailUser || '';
   document.getElementById('gmailPass').value = '';
   renderUserList(); renderRoomList(); renderTriggerList();
@@ -896,6 +898,11 @@ async function openSettings() {
 }
 
 function closeSettings() { document.getElementById('settingsModal').classList.remove('open'); }
+
+function copyIcalUrl() {
+  const el = document.getElementById('icalUrl');
+  if (navigator.clipboard) { navigator.clipboard.writeText(el.value); } else { el.select(); document.execCommand('copy'); }
+}
 
 async function syncTimezoneFromHA() {
   try {
