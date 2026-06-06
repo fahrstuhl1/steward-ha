@@ -195,6 +195,11 @@
           </div>
         </div>
       </div>
+      <div class="form-group" id="subtaskSection">
+        <label data-i18n="label.subtasks">Subtasks (Checklist)</label>
+        <div id="subtaskInputList"></div>
+        <button type="button" class="add-row-btn" style="margin-top:4px;" onclick="addSubtaskInput()" data-i18n="btn.add_step">+ Add step</button>
+      </div>
     </div>
 
     <div class="modal-actions">
@@ -324,6 +329,22 @@
             <div class="toggle-desc" data-i18n="desc.weekly_summary">Monday morning email/HA notification with completed tasks</div>
           </div>
         </label>
+      </div>
+      <hr class="divider" />
+      <div class="settings-section">
+        <h3 data-i18n="settings.notifications">Notifications</h3>
+        <label class="toggle-row" style="margin-bottom:10px;">
+          <input type="checkbox" id="completionNotifyToggle" />
+          <span class="toggle-track"></span>
+          <div class="toggle-text">
+            <div class="toggle-label" data-i18n="label.completion_notify">Notify others on completion</div>
+            <div class="toggle-desc" data-i18n="desc.completion_notify">Push to other household members when someone completes a task</div>
+          </div>
+        </label>
+        <div class="form-group" style="margin-top:8px;">
+          <label data-i18n="label.repeat_notify_hours">Repeat reminder after (hours)</label>
+          <input type="number" id="repeatNotifyHours" min="1" max="168" placeholder="24" />
+        </div>
       </div>
       <hr class="divider" />
       <div class="settings-section">

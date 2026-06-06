@@ -34,7 +34,7 @@ cron.schedule('*/15 * * * *', async () => {
 
     } else if (alreadyNotified && isDue(task)) {
       const hoursSince = (now - new Date(task.lastNotified).getTime()) / 3600000;
-      if (hoursSince >= 24) {
+      if (hoursSince >= (data.settings.repeatNotifyHours ?? 24)) {
         const allUsers = data.settings.users || [];
         const targets  = task.assignee === 'alle' ? allUsers.map(u => u.id) : [task.assignee];
         const timeStr  = task.dueTime ? ` at ${task.dueTime}` : '';

@@ -404,7 +404,7 @@ async function renderArchiveView() {
       const u = users.find(u => u.id === e.completedBy);
       const date = new Date(e.archivedAt).toLocaleDateString('en-GB', {day:'2-digit',month:'2-digit',year:'numeric'});
       const room = rooms.find(r => r.id === e.room);
-      return `<div class="archive-item"><div class="archive-icon">${PRIORITY_ICON[e.priority||'normal']}</div><div class="archive-info"><div class="archive-name">${e.name}</div><div class="archive-meta">${room ? room.icon+' '+room.name : e.room} · ${u ? u.name : e.completedBy} · ${date}</div>${e.comment ? `<div class="archive-comment">💬 ${e.comment}</div>` : ''}</div></div>`;
+      return `<div class="archive-item"><div class="archive-icon">${PRIORITY_ICON[e.priority||'normal']}</div><div class="archive-info"><div class="archive-name">${e.name}</div><div class="archive-meta">${room ? room.icon+' '+room.name : e.room} · ${u ? u.name : e.completedBy} · ${date}</div>${e.comment ? `<div class="archive-comment">💬 ${e.comment}</div>` : ''}${e.photo ? `<img class="archive-photo" src="${e.photo}" alt="" loading="lazy">` : ''}</div></div>`;
     }).join('');
 }
 
@@ -511,15 +511,31 @@ function taskCard(t) {
   const nextDueStr    = formatNextDue(t.nextDueData) || t.nextDue;
   const waitingLabel  = isWaiting ? `<span class="due-label muted">⏳ ${L('state.waiting')} · ${nextDueStr}</span>` : `<span class="due-label ${dueClass}">${nextDueStr}</span>`;
 
+  const subtasks      = Array.isArray(t.subtasks) ? t.subtasks : [];
+  const subtaskHint   = subtasks.length ? ` <span class="meta-dot">·</span><span class="meta-text">☑ ${subtasks.filter(s=>s.done).length}/${subtasks.length}</span>` : '';
+  const subtaskList   = subtasks.length ? `<div class="subtask-list" onclick="event.stopPropagation()">${subtasks.map(s => `<label class="subtask-item ${s.done?'subtask-done':''}"><input type="checkbox" ${s.done?'checked':''} onchange="toggleSubtask('${t.id}','${s.id}',this)"><span>${s.name}</span></label>`).join('')}</div>` : '';
+
   return `<div class="task-card ${cardClass}" data-id="${t.id}">
     <button class="check-btn" onclick="toggleComplete('${t.id}')">${checkIcon}</button>
     <div class="task-info" onclick="onTaskInfoClick('${t.id}')" style="cursor:pointer">
       <div class="task-name">${priorityDot}${t.name}</div>
-      <div class="task-meta">${badgeHtml}<span class="meta-dot">·</span><span class="meta-text">${intervalLabel}</span><span class="meta-dot">·</span>${waitingLabel}${notifyHint}</div>
-      ${snoozeHint}${commentLine}
+      <div class="task-meta">${badgeHtml}<span class="meta-dot">·</span><span class="meta-text">${intervalLabel}</span><span class="meta-dot">·</span>${waitingLabel}${notifyHint}${subtaskHint}</div>
+      ${snoozeHint}${commentLine}${subtaskList}
     </div>
     <div class="task-actions"><button class="task-action-btn" onclick="openCtxMenu(event,'${t.id}')" title="${L('btn.more')}">···</button></div>
   </div>`;
+}
+
+async function toggleSubtask(taskId, subId, checkbox) {
+  checkbox.disabled = true;
+  try {
+    const res = await (await fetch(`api/tasks/${taskId}/subtasks/${subId}/toggle`, { method: 'POST' })).json();
+    const task = tasks.find(t => t.id === taskId);
+    const sub  = task?.subtasks?.find(s => s.id === subId);
+    if (sub) sub.done = res.done;
+    checkbox.closest('.subtask-item')?.classList.toggle('subtask-done', res.done);
+  } catch(e) { checkbox.checked = !checkbox.checked; }
+  checkbox.disabled = false;
 }
 
 async function toggleComplete(id) {
@@ -730,6 +746,7 @@ function openAddModal() {
   document.getElementById('taskNotifyTimeWeekend').value='';
   document.getElementById('notifEnabled').checked=true;
   updateNotifyVisibility();
+  document.getElementById('subtaskInputList').innerHTML='';
   // reset progressive disclosure
   document.getElementById('moreOptionsPanel').style.display='none';
   document.getElementById('moreOptionsChevron').textContent='▾';
@@ -762,6 +779,8 @@ function openEditModal(id) {
   document.getElementById('taskNotifyTimeWeekend').value=task.notifyTimeWeekend||'';
   document.getElementById('notifEnabled').checked=task.notify !== false;
   updateNotifyVisibility();
+  document.getElementById('subtaskInputList').innerHTML='';
+  (task.subtasks||[]).forEach(s => addSubtaskInput(s.name, s.id, s.done));
   setDueType(task.dueDate ? 'fixed' : 'interval');
   updateIntervalUI();
   _initIntervalChips();
@@ -772,6 +791,24 @@ function openEditModal(id) {
 }
 
 function closeTaskModal() { document.getElementById('taskModal').classList.remove('open'); }
+
+function addSubtaskInput(name='', id=null, done=false) {
+  const row = document.createElement('div');
+  row.className = 'subtask-input-row';
+  row.dataset.id = id || `sub_${Date.now()}_${Math.random().toString(36).slice(2,7)}`;
+  row.innerHTML = `<input type="checkbox" class="subtask-done-check" ${done?'checked':''}><input type="text" class="subtask-name-input" placeholder="${L('placeholder.subtask')}" value="${name.replace(/"/g,'&quot;')}"><button type="button" class="del-btn" onclick="this.closest('.subtask-input-row').remove()">✕</button>`;
+  document.getElementById('subtaskInputList').appendChild(row);
+}
+
+function gatherSubtasks() {
+  return [...document.querySelectorAll('#subtaskInputList .subtask-input-row')]
+    .map(row => ({
+      id:   row.dataset.id,
+      name: row.querySelector('.subtask-name-input').value.trim(),
+      done: row.querySelector('.subtask-done-check').checked
+    }))
+    .filter(s => s.name);
+}
 
 async function saveTask() {
   const mode = document.getElementById('dueBtnFixed').classList.contains('active') ? 'fixed' : 'interval';
@@ -789,7 +826,8 @@ async function saveTask() {
     notifyOffset:         Number(document.getElementById('taskNotifyOffset').value)||0,
     notifyTimeWeekday:    document.getElementById('taskNotifyTimeWeekday').value||null,
     notifyTimeWeekend:    document.getElementById('taskNotifyTimeWeekend').value||null,
-    notify: document.getElementById('notifEnabled').checked
+    notify: document.getElementById('notifEnabled').checked,
+    subtasks: gatherSubtasks()
   };
   if(!body.name) { alert(L('alert.no_name')); return; }
   const saveBtn = document.querySelector('#taskModal .btn-primary');
@@ -906,6 +944,8 @@ async function openSettings() {
   document.getElementById('timezoneDisplay').textContent = s.timezone || 'UTC';
   document.getElementById('gamificationToggle').checked = s.gamificationEnabled !== false;
   document.getElementById('weeklySummaryToggle').checked = s.weeklySummaryEnabled !== false;
+  document.getElementById('completionNotifyToggle').checked = s.completionNotify !== false;
+  document.getElementById('repeatNotifyHours').value = s.repeatNotifyHours ?? 24;
   document.getElementById('vacationFrom').value = s.vacationFrom || '';
   document.getElementById('vacationTo').value   = s.vacationTo   || '';
   document.getElementById('haUrl').value     = s.haUrl    || '';
@@ -957,6 +997,8 @@ async function saveSettings() {
     timezone:           document.getElementById('settingsTimezone').value || 'UTC',
     gamificationEnabled:  document.getElementById('gamificationToggle').checked,
     weeklySummaryEnabled: document.getElementById('weeklySummaryToggle').checked,
+    completionNotify:     document.getElementById('completionNotifyToggle').checked,
+    repeatNotifyHours:    Number(document.getElementById('repeatNotifyHours').value) || 24,
     vacationFrom:         document.getElementById('vacationFrom').value || null,
     vacationTo:           document.getElementById('vacationTo').value   || null,
     haUrl:              document.getElementById('haUrl').value.trim(),

@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.6.8
+### New Features
+- **Sub-Tasks / Checklisten**: Aufgaben können jetzt eine Checkliste mit einzelnen Schritten bekommen (im Mehr-Optionen-Bereich des Aufgaben-Dialogs); Fortschritt wird auf der Task-Karte angezeigt und einzelne Schritte können dort direkt abgehakt werden
+- **Benachrichtigung bei Erledigung durch andere**: Optional (standardmäßig an) werden alle anderen Haushaltsmitglieder per Push/E-Mail informiert, wenn jemand eine Aufgabe abschließt — abschaltbar in den Einstellungen
+- **Wiederkehrende Erinnerung konfigurierbar**: Das Intervall für wiederholte „noch ausstehend"-Erinnerungen ist jetzt in den Einstellungen einstellbar (Standard weiterhin 24h) statt fest codiert
+- **Foto im Archiv**: Fotos, die beim Abschließen einer einmaligen Aufgabe hochgeladen wurden, werden jetzt auch in der Archiv-Ansicht angezeigt
+
+### Fixes
+- README-Versionsbadge zeigte eine veraltete Versionsnummer
+- Veraltete `notifications`-Struktur im Webhook-Task-Endpunkt auf das aktuelle `notify`-Boolean-Modell umgestellt
+
+---
+
 ## 1.6.7
 ### Improvements
 - **Lovelace Card: Aufgaben direkt abhaken** — neues optionales Config-Feld `complete_as: <userId>`; zeigt pro Task-Zeile einen ✓-Button, der die Aufgabe ohne Öffnen der Steward-UI als erledigt markiert; fällt auf `filter.person` zurück wenn `complete_as` nicht gesetzt ist
