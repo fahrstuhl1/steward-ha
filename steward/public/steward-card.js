@@ -80,7 +80,7 @@ class StewardTaskCard extends HTMLElement {
     this.shadowRoot.innerHTML = `
       <style>${css}</style>
       <ha-card>
-        <div class="card-header">${title}</div>
+        <div class="card-header">${_esc(title)}</div>
         <div class="task-list">${this._taskHtml(tasks)}</div>
       </ha-card>`;
   }

@@ -65,7 +65,7 @@ async function updateHaSensors() {
   for (const room of rooms) {
     const roomDue = tasks.filter(t => (t.room || 'general') === room.id && isDue(t));
     await setHaState(data, `sensor.steward_${room.id}_due`, roomDue.length, {
-      friendly_name: `Steward ${room.name || room.id} Due`, icon: room.icon ? '' : 'mdi:door', tasks: taskAttrs(roomDue)
+      friendly_name: `Steward ${room.name || room.id} Due`, icon: room.icon || 'mdi:door', tasks: taskAttrs(roomDue)
     });
   }
 }

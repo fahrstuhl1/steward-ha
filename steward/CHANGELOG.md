@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.4.2
+### Bug Fixes
+- **Skip-Route**: `getScheduledDueAt` durch `getDueAt` ersetzt — aufeinanderfolgende Skips ohne zwischenzeitliche Erledigung rückten die Aufgabe nicht weiter vor (blieben beim ersten Skip-Datum stecken)
+- **HA-Raum-Sensor**: Icon-Ternär war invertiert (`room.icon ? '' : 'mdi:door'` → `room.icon || 'mdi:door'`) — konfigurierte Icons wurden verworfen, ikonlose Räume korrekt
+- **Lovelace-Karte**: XSS-Lücke — `title` aus der Karten-Konfiguration wurde ohne Escaping in `innerHTML` eingefügt; `_esc()` wird nun angewendet
+- **Wochentag-Erkennung**: `new Date().getDay()` nutzte System-Timezone des Servers; `Intl.DateTimeFormat` mit konfigurierter App-Timezone wird nun für die Wochenend-Erkennung verwendet
+- **Raum nur wartend**: Räume mit ausschließlich wartenden Aufgaben wurden bei `showDone=false` vollständig aus dem DOM entfernt, obwohl der Button sie im Zähler führte; Räume bleiben nun sichtbar mit einem Hinweis-Text
+- **Legacy-Aufgaben**: `task.notifications?.ha` mit Optional-Chaining abgesichert — fehlende `notifications`-Felder (ältere Backups) führten zu `TypeError` beim Öffnen des Bearbeiten-Modals
+
+---
+
 ## 1.4.1
 ### Improvements
 - **HA sensor attributes**: `sensor.steward_due`, `sensor.steward_due_soon`, and all user sensors now carry a `tasks` attribute (name, room, assignee, priority, due) — usable in markdown cards, template conditions and automations without a custom card

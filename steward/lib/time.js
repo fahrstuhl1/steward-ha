@@ -35,12 +35,13 @@ function getDueAt(task) {
   return getScheduledDueAt(task);
 }
 
-function getNotifyAt(task) {
+function getNotifyAt(task, timezone) {
   const dueAt = getDueAt(task);
   let base = dueAt - (task.notifyOffset != null ? Number(task.notifyOffset) : 0) * 60000;
   if (task.notifyTimeWeekday || task.notifyTimeWeekend) {
-    const day = new Date(dueAt).getDay();
-    const isWeekend = day === 0 || day === 6;
+    const tz = timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const dayName = new Intl.DateTimeFormat('en-US', { weekday: 'short', timeZone: tz }).format(new Date(dueAt));
+    const isWeekend = dayName === 'Sat' || dayName === 'Sun';
     const timeStr = isWeekend ? task.notifyTimeWeekend : task.notifyTimeWeekday;
     if (timeStr) {
       const d = new Date(dueAt);

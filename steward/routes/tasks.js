@@ -114,7 +114,7 @@ router.post('/:id/skip', (req, res) => {
     writeData(data); updateHaSensors();
     return res.json({ success: true });
   }
-  const currentDueAt = getScheduledDueAt(task);
+  const currentDueAt = getDueAt(task);
   const intervalMs   = getIntervalMs(task);
   let nextDue = currentDueAt + intervalMs;
   while (nextDue <= Date.now()) nextDue += intervalMs;

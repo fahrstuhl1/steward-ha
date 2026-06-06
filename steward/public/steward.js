@@ -389,9 +389,9 @@ function renderTasks() {
     const waiting = group.filter(t => !t.isDue && !t.isSoon && t.lastCompleted && !t.dueDate);
     const future  = group.filter(t => !t.isDue && !t.isSoon && !(t.lastCompleted && !t.dueDate));
     due.sort((a,b)=>{ if(a.isDue!==b.isDue) return a.isDue?-1:1; return PRIORITY_ORDER[a.priority||'normal']-PRIORITY_ORDER[b.priority||'normal']; });
-    if(!showDone) totalWaiting+=waiting.length;
     const visible = [...due, ...(showDone ? [...waiting, ...future] : [])];
-    if(!visible.length) return;
+    if(!visible.length && !waiting.length) return;
+    if(!showDone) totalWaiting+=waiting.length;
     const collapsed=collapsedRooms.has(r.id);
     html+=`<div class="section ${collapsed?'collapsed':''}" id="sec-${r.id}">
       <div class="section-header" onclick="toggleRoom('${r.id}')">
@@ -399,7 +399,7 @@ function renderTasks() {
         ${due.length?`<span class="section-due-count">${L('section.due_count', {n: due.length})}</span>`:''}
         <span class="section-chevron">▾</span>
       </div>
-      <div class="section-body"><div class="task-list">${visible.map(taskCard).join('')}</div></div>
+      <div class="section-body">${visible.length ? `<div class="task-list">${visible.map(taskCard).join('')}</div>` : `<div class="waiting-placeholder">${L('section.waiting_hidden', {n: waiting.length})}</div>`}</div>
     </div>`;
   });
   document.getElementById('taskContainer').innerHTML = html || `<div class="empty-state">${L('empty.all_done')}</div>`;
@@ -610,8 +610,8 @@ function openEditModal(id) {
   document.getElementById('taskNotifyOffset').value=String(task.notifyOffset||0);
   document.getElementById('taskNotifyTimeWeekday').value=task.notifyTimeWeekday||'';
   document.getElementById('taskNotifyTimeWeekend').value=task.notifyTimeWeekend||'';
-  document.getElementById('notifHa').checked=task.notifications.ha||false;
-  document.getElementById('notifEmail').checked=task.notifications.email||false;
+  document.getElementById('notifHa').checked=(task.notifications?.ha)||false;
+  document.getElementById('notifEmail').checked=(task.notifications?.email)||false;
   // show advanced panel when editing (user expects all fields)
   document.getElementById('moreOptionsPanel').style.display='';
   document.getElementById('moreOptionsChevron').textContent='▴';
