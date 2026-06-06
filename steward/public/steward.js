@@ -612,10 +612,7 @@ function openEditModal(id) {
   document.getElementById('taskNotifyTimeWeekend').value=task.notifyTimeWeekend||'';
   document.getElementById('notifHa').checked=(task.notifications?.ha)||false;
   document.getElementById('notifEmail').checked=(task.notifications?.email)||false;
-  // show advanced panel when editing (user expects all fields)
-  document.getElementById('moreOptionsPanel').style.display='';
-  document.getElementById('moreOptionsChevron').textContent='▴';
-  document.getElementById('moreOptionsLabel').textContent=L('more_options.hide');
+
   setDueType(task.dueDate ? 'fixed' : 'interval');
   updateIntervalUI();
   _initIntervalChips();
