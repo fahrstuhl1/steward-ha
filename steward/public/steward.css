@@ -141,7 +141,7 @@ main { max-width: 640px; margin: 0 auto; padding: 16px 14px 60px; }
 .vacation-banner small { font-size:0.74rem; opacity:0.85; }
 .nlp-input { font-size: 0.95rem !important; }
 .nlp-tags { display: flex; flex-wrap: wrap; gap: 6px; min-height: 24px; margin: 6px 0 10px; }
-.nlp-tag { font-size: 0.72rem; font-weight: 600; padding: 3px 9px; border-radius: 10px; background: rgba(91,156,246,0.15); color: #5b9cf6; }
+.nlp-tag { font-size: 0.72rem; font-weight: 600; padding: 3px 9px; border-radius: 10px; background: rgba(91,156,246,0.15); color: #5b9cf6; border: 1.5px solid transparent; }
 .photo-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .photo-btn { font-size: 0.82rem; padding: 7px 12px; background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--r-sm); cursor: pointer; color: var(--text2); }
 .photo-preview { width: 56px; height: 56px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border2); }

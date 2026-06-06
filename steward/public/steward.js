@@ -1043,9 +1043,10 @@ function parseNLP(text) {
     const y = dateMatch[3] ? (dateMatch[3].length === 2 ? '20' + dateMatch[3] : dateMatch[3]) : new Date().getFullYear();
     result.dueDate = `${y}-${m}-${d}`; result.interval = 'once';
   }
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   let cleanName = text;
-  users.forEach(u => { if (new RegExp('\\b' + u.name + '\\b', 'i').test(text)) { result.assignee = u.id; cleanName = cleanName.replace(new RegExp(u.name, 'gi'), ''); } });
-  rooms.forEach(r => { if (new RegExp('\\b' + r.name + '\\b', 'i').test(text)) { result.room = r.id; cleanName = cleanName.replace(new RegExp(r.name, 'gi'), ''); } });
+  users.forEach(u => { const re = new RegExp(esc(u.name), 'gi'); if (re.test(text)) { result.assignee = u.id; cleanName = cleanName.replace(new RegExp(esc(u.name), 'gi'), ''); } });
+  rooms.forEach(r => { const re = new RegExp(esc(r.name), 'gi'); if (re.test(text)) { result.room = r.id; cleanName = cleanName.replace(new RegExp(esc(r.name), 'gi'), ''); } });
   cleanName = cleanName
     .replace(/täglich|every day|daily|zweiwöchentlich|every two weeks|biweekly|alle 2 wochen|monatlich|every month|monthly|vierteljährlich|quarterly|wöchentlich|every week|weekly/gi, '')
     .replace(dateMatch ? dateMatch[0] : /(?:)/, '')
@@ -1080,7 +1081,7 @@ async function submitNlp() {
   const p = parseNLP(text);
   const body = {
     name:      p.name || text,
-    interval:  p.dueDate ? 'weekly' : (p.interval || 'weekly'),
+    interval:  p.interval || 'weekly',
     dueDate:   p.dueDate  || null,
     assignee:  p.assignee || (currentView !== 'alle' ? currentView : (users[0]?.id || 'alle')),
     room:      p.room     || (currentGroup !== 'alle' ? currentGroup : 'general'),

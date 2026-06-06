@@ -90,14 +90,12 @@ cron.schedule('0 7 * * 1', async () => {
   });
   const msg = `Weekly summary: ${recent.length} task${recent.length !== 1 ? 's' : ''} completed\n` + lines.slice(0, 15).join('\n');
   console.log('[WeeklySummary]', msg);
-  const targets = [...new Set(allUsers.map(u => u.id))];
-  for (const userId of targets) {
-    if (data.settings.notifications?.ha !== false) {
-      try { await sendHaNotify(data, userId, '📋 Weekly Summary', msg, null); } catch(e) {}
+  for (const user of allUsers) {
+    if (user.haService) {
+      try { await sendHaNotify(data, user.id, '📋 Weekly Summary', msg, null); } catch(e) {}
     }
-    const user = allUsers.find(u => u.id === userId);
-    if (user?.email && data.settings.gmailUser) {
-      try { await sendEmail(data, userId, 'Steward Weekly Summary', msg); } catch(e) {}
+    if (user.email && data.settings.gmailUser) {
+      try { await sendEmail(data, user.id, 'Steward Weekly Summary', msg); } catch(e) {}
     }
   }
 });
