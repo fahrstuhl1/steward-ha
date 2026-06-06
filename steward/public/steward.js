@@ -797,13 +797,23 @@ async function saveTask() {
 }
 
 function renderUserList() {
-  document.getElementById('userList').innerHTML = users.map((u,i) => `
-    <div class="list-row">
-      <input type="color" value="${u.color}" oninput="users[${i}].color=this.value" title="Color" />
-      <input class="flex1" type="text" value="${u.name}" placeholder="Name" oninput="users[${i}].name=this.value" />
-      <input class="flex1" type="email" value="${u.email||''}" placeholder="Email" oninput="users[${i}].email=this.value" />
-      <input class="flex1" type="text" value="${u.haService||''}" placeholder="HA service (e.g. mobile_app_phone)" oninput="users[${i}].haService=this.value" />
-      <button class="del-btn" onclick="removeUser(${i})">✕</button>
+  document.getElementById('userList').innerHTML = users.map((u, i) => `
+    <div class="user-card">
+      <div class="user-card-top">
+        <input type="color" value="${u.color}" oninput="users[${i}].color=this.value" title="Color" />
+        <input class="user-name-input" type="text" value="${u.name}" placeholder="Name" oninput="users[${i}].name=this.value" />
+        <button class="del-btn" onclick="removeUser(${i})">✕</button>
+      </div>
+      <div class="user-card-fields">
+        <div class="user-field-row">
+          <span class="user-field-label">Email</span>
+          <input type="email" value="${u.email || ''}" placeholder="name@example.com" oninput="users[${i}].email=this.value" />
+        </div>
+        <div class="user-field-row">
+          <span class="user-field-label">HA service</span>
+          <input type="text" value="${u.haService || ''}" placeholder="mobile_app_phone" oninput="users[${i}].haService=this.value" />
+        </div>
+      </div>
     </div>`
   ).join('');
 }

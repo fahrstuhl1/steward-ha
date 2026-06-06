@@ -201,6 +201,16 @@ main { max-width: 640px; margin: 0 auto; padding: 16px 14px 60px; }
 .flex1 { flex: 1 !important; }
 .del-btn { background: none; border: none; color: var(--text3); cursor: pointer; padding: 3px 7px; border-radius: 5px; font-size: 0.75rem; transition: color 0.1s; flex-shrink: 0; }
 .del-btn:hover { color: var(--red); }
+.user-card { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 8px 10px; }
+.user-card-top { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
+.user-card-top input[type=color] { width: 26px !important; height: 26px !important; padding: 0 !important; border: none !important; border-radius: 50% !important; cursor: pointer; flex-shrink: 0; background: none !important; }
+.user-name-input { flex: 1; background: transparent !important; border: none !important; border-bottom: 1px solid var(--border2) !important; border-radius: 0 !important; padding: 2px 2px !important; font-size: 0.9rem !important; font-weight: 500 !important; color: var(--text) !important; outline: none; min-width: 0; }
+.user-name-input:focus { border-bottom-color: #5b9cf6 !important; }
+.user-card-fields { display: flex; flex-direction: column; gap: 5px; }
+.user-field-row { display: flex; align-items: center; gap: 8px; }
+.user-field-label { font-size: 0.6rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text3); width: 58px; flex-shrink: 0; }
+.user-field-row input { flex: 1; background: var(--surface) !important; border: 1px solid var(--border) !important; border-radius: 4px !important; padding: 4px 7px !important; font-size: 0.8rem !important; color: var(--text) !important; outline: none; min-width: 0; }
+.user-field-row input:focus { border-color: #5b9cf6 !important; }
 .add-row-btn { width: 100%; padding: 8px; background: transparent; border: 1px dashed var(--border2); border-radius: var(--r-sm); color: var(--text3); font-size: 0.8rem; cursor: pointer; transition: all 0.12s; }
 .add-row-btn:hover { border-color: var(--text2); color: var(--text2); }
 .trigger-card { background:var(--surface2); border:1px solid var(--border); border-radius:var(--r-sm); padding:10px; margin-bottom:8px; }
