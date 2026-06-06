@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.4.3
+### Improvements
+- **Tap-to-edit**: Tippen auf den Aufgaben-Namen/-Info-Bereich öffnet direkt den Bearbeitungsmodus
+- **Bearbeitungsmodal**: "Weitere Optionen" ist standardmäßig eingeklappt — saubere Ansicht beim Öffnen, bei Bedarf manuell erweiterbar
+
+---
+
 ## 1.4.2
 ### Bug Fixes
 - **Skip-Route**: `getScheduledDueAt` durch `getDueAt` ersetzt — aufeinanderfolgende Skips ohne zwischenzeitliche Erledigung rückten die Aufgabe nicht weiter vor (blieben beim ersten Skip-Datum stecken)
