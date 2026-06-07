@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.6.9
+### Improvements
+- **Urlaubsmodus-Aktivierung**: Der Zeitraum (Von/Bis) ist jetzt nur noch einstellbar, wenn der Urlaubsmodus über den neuen Schalter aktiviert ist — verhindert versehentlich aktiven Urlaubsmodus durch bereits gesetzte Daten
+
+---
+
 ## 1.6.8
 ### New Features
 - **Sub-Tasks / Checklisten**: Aufgaben können jetzt eine Checkliste mit einzelnen Schritten bekommen (im Mehr-Optionen-Bereich des Aufgaben-Dialogs); Fortschritt wird auf der Task-Karte angezeigt und einzelne Schritte können dort direkt abgehakt werden

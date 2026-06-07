@@ -953,8 +953,10 @@ async function openSettings() {
   document.getElementById('weeklySummaryToggle').checked = s.weeklySummaryEnabled !== false;
   document.getElementById('completionNotifyToggle').checked = s.completionNotify !== false;
   document.getElementById('repeatNotifyHours').value = s.repeatNotifyHours ?? 24;
+  document.getElementById('vacationToggle').checked = !!s.vacationEnabled;
   document.getElementById('vacationFrom').value = s.vacationFrom || '';
   document.getElementById('vacationTo').value   = s.vacationTo   || '';
+  toggleVacationFields();
   document.getElementById('haUrl').value     = s.haUrl    || '';
   document.getElementById('haToken').value   = '';
   document.getElementById('addonUrl').value  = s.addonUrl || '';
@@ -967,6 +969,12 @@ async function openSettings() {
   renderUserList(); renderRoomList(); renderTriggerList();
   switchSettingsTab('general');
   document.getElementById('settingsModal').classList.add('open');
+}
+
+function toggleVacationFields() {
+  const enabled = document.getElementById('vacationToggle').checked;
+  document.getElementById('vacationFrom').disabled = !enabled;
+  document.getElementById('vacationTo').disabled   = !enabled;
 }
 
 function closeSettings() { document.getElementById('settingsModal').classList.remove('open'); }
@@ -1006,6 +1014,7 @@ async function saveSettings() {
     weeklySummaryEnabled: document.getElementById('weeklySummaryToggle').checked,
     completionNotify:     document.getElementById('completionNotifyToggle').checked,
     repeatNotifyHours:    Number(document.getElementById('repeatNotifyHours').value) || 24,
+    vacationEnabled:      document.getElementById('vacationToggle').checked,
     vacationFrom:         document.getElementById('vacationFrom').value || null,
     vacationTo:           document.getElementById('vacationTo').value   || null,
     haUrl:              document.getElementById('haUrl').value.trim(),
