@@ -1153,9 +1153,26 @@ function clearPhoto() {
 }
 
 // ── NLP Quick-Add ───────────────────────────────────────────────────────────
+const NLP_ORDINAL_DAYS = {
+  zweiten:2, dritten:3, vierten:4, fünften:5, sechsten:6, siebten:7, achten:8, neunten:9, zehnten:10,
+  second:2, third:3, fourth:4, fifth:5, sixth:6, seventh:7, eighth:8, ninth:9, tenth:10
+};
+
 function parseNLP(text) {
-  const result = { name: text.trim(), interval: 'weekly', dueDate: null, assignee: null, room: null };
-  if      (/täglich|every day|daily/i.test(text))                        result.interval = 'daily';
+  const result = { name: text.trim(), interval: 'weekly', intervalCustomDays: null, dueDate: null, assignee: null, room: null };
+  let customMatch = text.match(/\balle\s+(\d+)\s+tage\b/i) || text.match(/\bevery\s+(\d+)\s+days\b/i);
+  let customDays  = customMatch ? parseInt(customMatch[1], 10) : null;
+  if (!customDays) {
+    const ordMatch = text.match(/\b(?:jeden|every)\s+(\w+)\s+(?:tag|day)\b/i);
+    if (ordMatch && NLP_ORDINAL_DAYS[ordMatch[1].toLowerCase()]) { customDays = NLP_ORDINAL_DAYS[ordMatch[1].toLowerCase()]; customMatch = ordMatch; }
+  }
+  if (!customDays && /\bevery other day\b/i.test(text)) { customDays = 2; customMatch = text.match(/\bevery other day\b/i); }
+
+  if (customDays >= 2) {
+    result.interval = 'custom';
+    result.intervalCustomDays = customDays;
+  }
+  else if (/täglich|every day|daily/i.test(text))                        result.interval = 'daily';
   else if (/zweiwöchentlich|every two weeks|biweekly|alle 2 wochen/i.test(text)) result.interval = 'biweekly';
   else if (/monatlich|every month|monthly/i.test(text))                  result.interval = 'monthly';
   else if (/vierteljährlich|quarterly/i.test(text))                      result.interval = 'quarterly';
@@ -1164,7 +1181,7 @@ function parseNLP(text) {
   if (dateMatch) {
     const d = dateMatch[1].padStart(2, '0'), m = dateMatch[2].padStart(2, '0');
     const y = dateMatch[3] ? (dateMatch[3].length === 2 ? '20' + dateMatch[3] : dateMatch[3]) : new Date().getFullYear();
-    result.dueDate = `${y}-${m}-${d}`; result.interval = 'once';
+    result.dueDate = `${y}-${m}-${d}`; result.interval = 'once'; result.intervalCustomDays = null;
   }
   const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   let cleanName = text;
@@ -1172,6 +1189,7 @@ function parseNLP(text) {
   rooms.forEach(r => { const re = new RegExp(esc(r.name), 'gi'); if (re.test(text)) { result.room = r.id; cleanName = cleanName.replace(new RegExp(esc(r.name), 'gi'), ''); } });
   cleanName = cleanName
     .replace(/täglich|every day|daily|zweiwöchentlich|every two weeks|biweekly|alle 2 wochen|monatlich|every month|monthly|vierteljährlich|quarterly|wöchentlich|every week|weekly/gi, '')
+    .replace(customMatch ? customMatch[0] : /(?:)/, '')
     .replace(dateMatch ? dateMatch[0] : /(?:)/, '')
     .trim().replace(/\s+/g, ' ');
   if (cleanName) result.name = cleanName;
@@ -1183,7 +1201,8 @@ function updateNlpTags() {
   if (!text.trim()) { document.getElementById('nlpTags').innerHTML = ''; return; }
   const p = parseNLP(text);
   const tags = [];
-  if (p.interval && p.interval !== 'once') tags.push(`<span class="nlp-tag">${L('interval.' + p.interval) || p.interval}</span>`);
+  if (p.interval === 'custom' && p.intervalCustomDays) tags.push(`<span class="nlp-tag">${L('interval.custom', {days: p.intervalCustomDays})}</span>`);
+  else if (p.interval && p.interval !== 'once') tags.push(`<span class="nlp-tag">${L('interval.' + p.interval) || p.interval}</span>`);
   if (p.dueDate)  tags.push(`<span class="nlp-tag">${p.dueDate}</span>`);
   if (p.assignee) { const u = users.find(u => u.id === p.assignee); if (u) tags.push(`<span class="nlp-tag" style="border-color:${u.color};color:${u.color}">${u.name}</span>`); }
   if (p.room)     { const r = rooms.find(r => r.id === p.room); if (r) tags.push(`<span class="nlp-tag">${r.icon} ${r.name}</span>`); }
@@ -1205,6 +1224,7 @@ async function submitNlp() {
   const body = {
     name:      p.name || text,
     interval:  p.interval || 'weekly',
+    intervalCustomDays: p.intervalCustomDays || null,
     dueDate:   p.dueDate  || null,
     assignee:  p.assignee || (currentView !== 'alle' ? currentView : (users[0]?.id || 'alle')),
     room:      p.room     || (currentGroup !== 'alle' ? currentGroup : 'general'),

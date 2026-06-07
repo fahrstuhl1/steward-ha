@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.6.13
+### Fixes
+- **NLP Quick-Add: „jeden zweiten Tag" / „alle N Tage"**: Der Parser erkannte Formulierungen wie „jeden zweiten Tag", „alle 3 Tage" oder „every other day" nicht und fiel auf das Standard-Intervall „Wöchentlich" zurück — jetzt werden sie korrekt als Eigenes Intervall (z. B. „Alle 2 Tage") erkannt
+
+---
+
 ## 1.6.12
 ### Improvements
 - **Urlaubsmodus-Aktivierung**: Der Zeitraum (Von/Bis) ist jetzt nur noch einstellbar, wenn der Urlaubsmodus über den neuen Schalter aktiviert ist — verhindert versehentlich aktiven Urlaubsmodus durch bereits gesetzte Daten
