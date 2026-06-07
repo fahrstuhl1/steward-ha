@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.6.17
+### Fixes
+- **Add-on gibt Web-UI/API jetzt über einen Host-Port frei**: `config.yaml` deklariert nun einen Port (Standard: 3456 → intern 3000) inkl. Beschreibung, sodass Home Assistant in den Add-on-Einstellungen die Netzwerk-/Port-Sektion anzeigt. Damit funktioniert der in der README dokumentierte Zugriff über `http://<ha-ip>:3456` (Lovelace-Karte, Sensoren, Webhook) tatsächlich — zuvor war das Add-on ausschließlich über Ingress erreichbar und der dokumentierte Port unerreichbar
+- README ergänzt: Hinweis, dass der Host-Port unter **Network**-Einstellungen des Add-ons konfigurierbar ist
+
 ## 1.6.16
 ### Fixes
 - **Push-Benachrichtigungen und Aktionsschaltflächen jetzt lokalisiert**: Titel, Texte und Aktions-Buttons (z. B. „✓ Erledigt" / „⏰ 2 Std. später") von HA-Push-Benachrichtigungen und E-Mails folgen nun der in der App gewählten Sprache (Deutsch/Englisch) statt fest auf Englisch zu stehen — betrifft Erinnerungen an fällige Aufgaben, Benachrichtigungen über erledigte Aufgaben durch andere, neue Aufgaben aus HA-Triggern sowie die Test-Benachrichtigungen in den Einstellungen
