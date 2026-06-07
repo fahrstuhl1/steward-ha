@@ -493,12 +493,14 @@ function renderTasks() {
 function getUserById(id) { return users.find(u => u.id === id); }
 
 function taskCard(t) {
+  const isSnoozedNow = !!(t.snoozedUntil && new Date(t.snoozedUntil) > new Date());
   const isNow      = t.isDue;
   const isSoonFlag = !isNow && t.isSoon;
   const isWaiting  = !isNow && !isSoonFlag && t.lastCompleted && !t.dueDate;
-  const isDone     = !isNow && !isSoonFlag && !isWaiting;
+  const isPostponed = !isNow && !isSoonFlag && !isWaiting && isSnoozedNow;
+  const isDone     = !isNow && !isSoonFlag && !isWaiting && !isPostponed;
   const isTomorrow = isDone && t.nextDueData?.key === 'due.tomorrow';
-  const cardClass  = isNow ? 'due-now' : isSoonFlag ? 'due-soon' : isTomorrow ? 'due-today' : isWaiting ? 'waiting' : 'done';
+  const cardClass  = isNow ? 'due-now' : isSoonFlag ? 'due-soon' : isTomorrow ? 'due-today' : (isWaiting || isPostponed) ? 'waiting' : 'done';
   const dueClass   = isNow ? 'red' : isSoonFlag ? 'yellow' : isTomorrow ? 'orange' : 'muted';
 
   let badgeHtml;
@@ -512,9 +514,9 @@ function taskCard(t) {
   const intervalLabel = t.dueDate ? L('interval.once') : (t.intervalCustomDays ? L('interval.custom', {days: t.intervalCustomDays}) : (L('interval.' + t.interval) || t.interval));
   const notifyHint    = t.notifyOffset > 0 ? ` <span class="meta-text">${t.notifyOffset < 60 ? L('notify.hint_min', {n: t.notifyOffset}) : L('notify.hint_hour', {n: Math.round(t.notifyOffset/60)})}</span>` : '';
   const priorityDot   = t.priority && t.priority !== 'normal' ? `<span class="priority-dot priority-${t.priority}"></span>` : '';
-  const snoozeHint    = t.snoozedUntil && new Date(t.snoozedUntil) > new Date() ? `<div class="snooze-hint" onclick="event.stopPropagation();openSnoozeModal('${t.id}')">${L('snooze.hint', {time: new Date(t.snoozedUntil).toLocaleTimeString(document.documentElement.lang === 'de' ? 'de-DE' : 'en-GB', {hour:'2-digit',minute:'2-digit'})})}</div>` : '';
+  const snoozeHint    = isSnoozedNow ? `<div class="snooze-hint" onclick="event.stopPropagation();openSnoozeModal('${t.id}')">${L('snooze.hint', {time: new Date(t.snoozedUntil).toLocaleTimeString(document.documentElement.lang === 'de' ? 'de-DE' : 'en-GB', {hour:'2-digit',minute:'2-digit'})})}</div>` : '';
   const commentLine   = t.lastComment ? `<div class="comment-text">💬 ${t.lastComment}</div>` : '';
-  const checkIcon     = isWaiting ? '⏳' : '✓';
+  const checkIcon     = (isWaiting || isPostponed) ? '⏳' : '✓';
   const nextDueStr    = formatNextDue(t.nextDueData) || t.nextDue;
   const waitingLabel  = isWaiting ? `<span class="due-label muted">⏳ ${L('state.waiting')} · ${nextDueStr}</span>` : `<span class="due-label ${dueClass}">${nextDueStr}</span>`;
 
