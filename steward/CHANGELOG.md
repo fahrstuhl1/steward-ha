@@ -1,11 +1,12 @@
 # Changelog
 
-## 1.6.10
+## 1.6.11
 ### Improvements
 - **Urlaubsmodus-Aktivierung**: Der Zeitraum (Von/Bis) ist jetzt nur noch einstellbar, wenn der Urlaubsmodus über den neuen Schalter aktiviert ist — verhindert versehentlich aktiven Urlaubsmodus durch bereits gesetzte Daten
 
 ### Fixes
 - **Falsche/fehlende Uhrzeit in Fälligkeitsanzeige**: Die angezeigte Uhrzeit wurde aus dem `dueTime`-Feld abgeleitet statt aus dem tatsächlich berechneten Fälligkeitszeitpunkt — nach Änderungen an Intervall, Uhrzeit oder Zeitplan-Modus konnte die Anzeige (z. B. "Heute" ohne Uhrzeit) vom echten Fälligkeitszeitpunkt abweichen
+- **Doppelte Fällig-Benachrichtigungen**: Der zeitgesteuerte Notifier und der 15-Minuten-Cron-Fallback konnten gleichzeitig auslösen und beide eine Push-Benachrichtigung für dieselbe Aufgabe senden — neue In-Memory-Sperre verhindert das gleichzeitige Senden
 
 ---
 

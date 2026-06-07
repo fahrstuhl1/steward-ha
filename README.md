@@ -1,5 +1,5 @@
 # 🏠 Steward — Home Assistant Add-on Repository
-![Version](https://img.shields.io/badge/version-1.6.10-blue?style=flat-square)
+![Version](https://img.shields.io/badge/version-1.6.11-blue?style=flat-square)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![HACS](https://img.shields.io/badge/HACS-Custom%20Repository-orange?style=flat-square)](https://hacs.xyz)
 

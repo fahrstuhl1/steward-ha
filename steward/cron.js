@@ -1,7 +1,7 @@
 const cron = require('node-cron');
 const { readData, writeData, isOnVacation } = require('./lib/data');
 const { getNotifyAt, isDue } = require('./lib/time');
-const { sendHaNotify, sendEmail } = require('./lib/notifications');
+const { sendHaNotify, sendEmail, tryLockNotify, unlockNotify } = require('./lib/notifications');
 const { updateHaSensors, checkHaTriggers } = require('./lib/ha');
 
 // 15-minute fallback: send missed notifications + 24h repeat for still-pending tasks
@@ -20,32 +20,42 @@ cron.schedule('*/15 * * * *', async () => {
     const alreadyNotified = task.lastNotified && new Date(task.lastNotified).getTime() > cycleStart;
 
     if (!alreadyNotified && getNotifyAt(task) <= now) {
-      const allUsers = data.settings.users || [];
-      const targets  = task.assignee === 'alle' ? allUsers.map(u => u.id) : [task.assignee];
-      const timeStr  = task.dueTime ? ` at ${task.dueTime}` : '';
-      const soon     = task.notifyOffset && task.notifyOffset > 0;
-      const msg      = `"${task.name}" is${soon ? ' almost' : ''} due${timeStr}`;
-      for (const userId of targets) {
-        await sendHaNotify(data, userId, '🏠 Task due', msg, task.id);
-        try { await sendEmail(data, userId, task.name, msg); } catch(e) {}
-      }
-      task.lastNotified = new Date().toISOString();
-      changed = true;
-
-    } else if (alreadyNotified && isDue(task, data.settings.timezone || null)) {
-      const hoursSince = (now - new Date(task.lastNotified).getTime()) / 3600000;
-      if (hoursSince >= (data.settings.repeatNotifyHours ?? 24)) {
+      if (!tryLockNotify(task.id)) continue;
+      try {
         const allUsers = data.settings.users || [];
         const targets  = task.assignee === 'alle' ? allUsers.map(u => u.id) : [task.assignee];
         const timeStr  = task.dueTime ? ` at ${task.dueTime}` : '';
-        const msg      = `⚠️ Still pending: "${task.name}"${timeStr}`;
-        console.log(`[Notify] Repeat: ${msg}`);
+        const soon     = task.notifyOffset && task.notifyOffset > 0;
+        const msg      = `"${task.name}" is${soon ? ' almost' : ''} due${timeStr}`;
         for (const userId of targets) {
-          await sendHaNotify(data, userId, '🏠 Reminder', msg, task.id);
+          await sendHaNotify(data, userId, '🏠 Task due', msg, task.id);
           try { await sendEmail(data, userId, task.name, msg); } catch(e) {}
         }
         task.lastNotified = new Date().toISOString();
         changed = true;
+      } finally {
+        unlockNotify(task.id);
+      }
+
+    } else if (alreadyNotified && isDue(task, data.settings.timezone || null)) {
+      const hoursSince = (now - new Date(task.lastNotified).getTime()) / 3600000;
+      if (hoursSince >= (data.settings.repeatNotifyHours ?? 24)) {
+        if (!tryLockNotify(task.id)) continue;
+        try {
+          const allUsers = data.settings.users || [];
+          const targets  = task.assignee === 'alle' ? allUsers.map(u => u.id) : [task.assignee];
+          const timeStr  = task.dueTime ? ` at ${task.dueTime}` : '';
+          const msg      = `⚠️ Still pending: "${task.name}"${timeStr}`;
+          console.log(`[Notify] Repeat: ${msg}`);
+          for (const userId of targets) {
+            await sendHaNotify(data, userId, '🏠 Reminder', msg, task.id);
+            try { await sendEmail(data, userId, task.name, msg); } catch(e) {}
+          }
+          task.lastNotified = new Date().toISOString();
+          changed = true;
+        } finally {
+          unlockNotify(task.id);
+        }
       }
     }
   }
