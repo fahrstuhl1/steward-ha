@@ -161,6 +161,7 @@ function cycleLang() {
   applyTranslations();
   render();
   applyTheme(currentTheme);
+  fetch('api/settings', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ language: next }) }).catch(() => {});
 }
 
 const DEFAULT_ROOMS   = [
@@ -211,6 +212,9 @@ async function loadSettings() {
   planningDays  = s.planningDays ?? 7;
   addonBaseUrl  = (s.addonUrl || s.haUrl || '').replace(/\/$/, '');
   if (s.theme) applyTheme(s.theme);
+  if (s.language !== document.documentElement.lang) {
+    fetch('api/settings', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ language: document.documentElement.lang }) }).catch(() => {});
+  }
   renderPersonTabs();
   renderLogoSub();
 }
