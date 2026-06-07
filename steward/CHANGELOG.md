@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.6.16
+### Fixes
+- **Push-Benachrichtigungen und Aktionsschaltflächen jetzt lokalisiert**: Titel, Texte und Aktions-Buttons (z. B. „✓ Erledigt" / „⏰ 2 Std. später") von HA-Push-Benachrichtigungen und E-Mails folgen nun der in der App gewählten Sprache (Deutsch/Englisch) statt fest auf Englisch zu stehen — betrifft Erinnerungen an fällige Aufgaben, Benachrichtigungen über erledigte Aufgaben durch andere, neue Aufgaben aus HA-Triggern sowie die Test-Benachrichtigungen in den Einstellungen
+- Die Sprachauswahl wird jetzt zusätzlich serverseitig gespeichert (`Einstellungen`), damit der Hintergrunddienst beim Versenden von Benachrichtigungen weiß, welche Sprache zu verwenden ist
+
 ## 1.6.15
 ### Improvements
 - **Neuer Zurückstellen-Dialog**: Statt der Aufgabe sofort fest 2 Stunden zu geben, öffnet „Zurückstellen" jetzt ein Pop-up, in dem die Dauer frei in Minuten, Stunden oder Tagen gewählt werden kann (inkl. Schnellauswahl-Chips wie „15 Min.", „1 Stunde", „1 Tag", „3 Tage")

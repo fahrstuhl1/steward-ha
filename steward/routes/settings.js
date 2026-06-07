@@ -99,7 +99,10 @@ router.post('/webhook/create-task', (req, res) => {
 
 router.post('/test-email', async (req, res) => {
   const { sendEmail } = require('../lib/notifications');
-  try { await sendEmail(readData(), req.body.userId, 'Test', 'Email is working! 🎉'); res.json({ success: true }); }
+  const { lang, t } = require('../lib/i18n');
+  const data = readData();
+  const language = lang(data);
+  try { await sendEmail(data, req.body.userId, t(language, 'notify.test_subject'), t(language, 'notify.test_email_body')); res.json({ success: true }); }
   catch(e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -107,7 +110,9 @@ router.post('/test-ha', async (req, res) => {
   const data = readData();
   if (!data.settings.haUrl || !data.settings.haToken) return res.status(400).json({ error: 'HA not configured' });
   const { sendHaNotify } = require('../lib/notifications');
-  const result = await sendHaNotify(data, req.body.userId, '🏠 Steward Test', 'HA push is working!');
+  const { lang, t } = require('../lib/i18n');
+  const language = lang(data);
+  const result = await sendHaNotify(data, req.body.userId, t(language, 'notify.test_ha_title'), t(language, 'notify.test_ha_body'));
   if (result && result.statusCode && result.statusCode !== 200) {
     return res.status(500).json({ error: `HA responded with ${result.statusCode}: ${result.body}` });
   }

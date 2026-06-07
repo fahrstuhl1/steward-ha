@@ -1,6 +1,7 @@
 const nodemailer = require('nodemailer');
 const { readData, writeData } = require('./data');
 const { getDueAt, getNotifyAt, timeOfDayStr } = require('./time');
+const { lang: dataLang, t } = require('./i18n');
 
 const pendingTimers = {};
 
@@ -30,9 +31,10 @@ async function sendHaNotify(data, userId, title, message, taskId = null) {
   const notifData = {};
   if (taskId) {
     const safeId = taskId.replace(/-/g, '');
+    const language = dataLang(data);
     notifData.actions = [
-      { action: `HPLAN_COMPLETE_${safeId}`, title: '✓ Done' },
-      { action: `HPLAN_SNOOZE_${safeId}`,   title: '⏰ 2h Snooze' }
+      { action: `HPLAN_COMPLETE_${safeId}`, title: t(language, 'notify.action_done') },
+      { action: `HPLAN_SNOOZE_${safeId}`,   title: t(language, 'notify.action_snooze') }
     ];
   }
   const payload = JSON.stringify({ title, message, ...(Object.keys(notifData).length ? { data: notifData } : {}) });
@@ -73,9 +75,11 @@ function notifyOthersOnCompletion(data, task, userId) {
   const completerName = completer ? completer.name : userId;
   const others = allUsers.filter(u => u.id !== userId);
   if (!others.length) return;
-  const msg = `${completerName} completed "${task.name}" ✓`;
+  const language = dataLang(data);
+  const title = t(language, 'notify.task_done_title');
+  const msg   = t(language, 'notify.task_done_msg', { user: completerName, name: task.name });
   for (const other of others) {
-    sendHaNotify(data, other.id, '✅ Task done', msg).catch(() => {});
+    sendHaNotify(data, other.id, title, msg).catch(() => {});
     sendEmail(data, other.id, task.name, msg).catch(() => {});
   }
 }
@@ -90,13 +94,18 @@ async function fireNotification(taskId) {
     if (task.lastNotified && new Date(task.lastNotified) > cycleStart) return;
     const allUsers = data.settings.users || [];
     const targets  = task.assignee === 'alle' ? allUsers.map(u => u.id) : [task.assignee];
+    const language = dataLang(data);
     const tod      = timeOfDayStr(getDueAt(task), data.settings.timezone);
-    const timeStr  = tod !== '00:00' ? ` at ${tod}` : '';
     const soon     = task.notifyOffset && task.notifyOffset > 0;
-    const msg      = `"${task.name}" is${soon ? ' almost' : ''} due${timeStr}`;
+    const msg      = t(language, 'notify.task_due_msg', {
+      name: task.name,
+      soon: soon ? t(language, 'notify.almost') : '',
+      time: tod !== '00:00' ? t(language, 'notify.at', { time: tod }) : ''
+    });
+    const title    = t(language, 'notify.task_due_title');
     console.log(`[Notify] ${msg}`);
     for (const userId of targets) {
-      await sendHaNotify(data, userId, '🏠 Task due', msg, task.id);
+      await sendHaNotify(data, userId, title, msg, task.id);
       try { await sendEmail(data, userId, task.name, msg); } catch(e) { if (data.settings.gmailUser) console.error(`[Notify] email ${userId}: ${e.message}`); }
     }
     task.lastNotified = new Date().toISOString();

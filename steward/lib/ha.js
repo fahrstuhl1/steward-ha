@@ -4,6 +4,7 @@ const { v4: uuidv4 } = require('uuid');
 const { readData, writeData, isOnVacation } = require('./data');
 const { getScheduledDueAt, getIntervalMs, isDue, isSoon, nextDueDate } = require('./time');
 const { sendHaNotify, sendEmail, scheduleNotification, notifyOthersOnCompletion } = require('./notifications');
+const { lang: i18nLang, t: i18nT } = require('./i18n');
 
 function request(haUrl, haToken, options, body = null) {
   const url = new URL(options.path, haUrl);
@@ -127,10 +128,14 @@ async function checkHaTriggers() {
       changed = true;
       const allUsers = data.settings.users || [];
       const targets  = task.assignee === 'alle' ? allUsers.map(u => u.id) : [task.assignee];
-      const timeStr  = task.dueTime ? ` at ${task.dueTime}` : '';
-      const msg      = `"${task.name}" is due${timeStr}`;
+      const language = i18nLang(data);
+      const msg      = i18nT(language, 'notify.task_due_msg', {
+        name: task.name, soon: '',
+        time: task.dueTime ? i18nT(language, 'notify.at', { time: task.dueTime }) : ''
+      });
+      const title    = i18nT(language, 'notify.new_task_title');
       for (const userId of targets) {
-        await sendHaNotify(data, userId, '🏠 New task', msg);
+        await sendHaNotify(data, userId, title, msg);
         try { await sendEmail(data, userId, task.name, msg); } catch(e) {}
       }
       task.lastNotified = new Date().toISOString();
