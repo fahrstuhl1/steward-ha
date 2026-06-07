@@ -1,6 +1,6 @@
 const cron = require('node-cron');
 const { readData, writeData, isOnVacation } = require('./lib/data');
-const { getNotifyAt, isDue } = require('./lib/time');
+const { getDueAt, getNotifyAt, isDue, timeOfDayStr } = require('./lib/time');
 const { sendHaNotify, sendEmail, tryLockNotify, unlockNotify } = require('./lib/notifications');
 const { updateHaSensors, checkHaTriggers } = require('./lib/ha');
 
@@ -19,12 +19,13 @@ cron.schedule('*/15 * * * *', async () => {
     const cycleStart      = task.lastCompleted ? new Date(task.lastCompleted).getTime() : 0;
     const alreadyNotified = task.lastNotified && new Date(task.lastNotified).getTime() > cycleStart;
 
-    if (!alreadyNotified && getNotifyAt(task) <= now) {
+    if (!alreadyNotified && getNotifyAt(task, data.settings.timezone || null) <= now) {
       if (!tryLockNotify(task.id)) continue;
       try {
         const allUsers = data.settings.users || [];
         const targets  = task.assignee === 'alle' ? allUsers.map(u => u.id) : [task.assignee];
-        const timeStr  = task.dueTime ? ` at ${task.dueTime}` : '';
+        const tod      = timeOfDayStr(getDueAt(task), data.settings.timezone);
+        const timeStr  = tod !== '00:00' ? ` at ${tod}` : '';
         const soon     = task.notifyOffset && task.notifyOffset > 0;
         const msg      = `"${task.name}" is${soon ? ' almost' : ''} due${timeStr}`;
         for (const userId of targets) {
@@ -44,7 +45,8 @@ cron.schedule('*/15 * * * *', async () => {
         try {
           const allUsers = data.settings.users || [];
           const targets  = task.assignee === 'alle' ? allUsers.map(u => u.id) : [task.assignee];
-          const timeStr  = task.dueTime ? ` at ${task.dueTime}` : '';
+          const tod      = timeOfDayStr(getDueAt(task), data.settings.timezone);
+          const timeStr  = tod !== '00:00' ? ` at ${tod}` : '';
           const msg      = `⚠️ Still pending: "${task.name}"${timeStr}`;
           console.log(`[Notify] Repeat: ${msg}`);
           for (const userId of targets) {

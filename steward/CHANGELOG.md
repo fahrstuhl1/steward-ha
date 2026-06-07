@@ -1,12 +1,14 @@
 # Changelog
 
-## 1.6.11
+## 1.6.12
 ### Improvements
 - **Urlaubsmodus-Aktivierung**: Der Zeitraum (Von/Bis) ist jetzt nur noch einstellbar, wenn der Urlaubsmodus über den neuen Schalter aktiviert ist — verhindert versehentlich aktiven Urlaubsmodus durch bereits gesetzte Daten
 
 ### Fixes
 - **Falsche/fehlende Uhrzeit in Fälligkeitsanzeige**: Die angezeigte Uhrzeit wurde aus dem `dueTime`-Feld abgeleitet statt aus dem tatsächlich berechneten Fälligkeitszeitpunkt — nach Änderungen an Intervall, Uhrzeit oder Zeitplan-Modus konnte die Anzeige (z. B. "Heute" ohne Uhrzeit) vom echten Fälligkeitszeitpunkt abweichen
 - **Doppelte Fällig-Benachrichtigungen**: Der zeitgesteuerte Notifier und der 15-Minuten-Cron-Fallback konnten gleichzeitig auslösen und beide eine Push-Benachrichtigung für dieselbe Aufgabe senden — neue In-Memory-Sperre verhindert das gleichzeitige Senden
+- **Falsche Uhrzeit in Fällig-Benachrichtigungen**: Push-/E-Mail-Texte ("… is due at HH:MM") wurden ebenfalls aus dem statischen `dueTime`-Feld statt dem tatsächlich berechneten Fälligkeitszeitpunkt gebaut — betraf den zeitgesteuerten Notifier sowie den Cron-Fallback (Erst- und Wiederholungs-Erinnerung)
+- **Cron-Fallback ignorierte konfigurierte Zeitzone**: Der 15-Minuten-Fallback ermittelte die Benachrichtigungszeit für `notifyTimeWeekday`/`notifyTimeWeekend` anhand der Server-Zeitzone statt der in den Einstellungen hinterlegten Zeitzone — konnte nahe der Tageswechsel-Grenze den falschen Wochentag (Werktag/Wochenende) wählen
 
 ---
 

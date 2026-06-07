@@ -129,4 +129,4 @@ function nextDueSerialized(task, timezone) {
   return { key: 'due.in_days', days: diff, time };
 }
 
-module.exports = { INTERVAL_DAYS, INTERVAL_LABELS, getIntervalMs, getScheduledDueAt, getDueAt, getNotifyAt, isDue, isSoon, nextDueDate, nextDueSerialized };
+module.exports = { INTERVAL_DAYS, INTERVAL_LABELS, getIntervalMs, getScheduledDueAt, getDueAt, getNotifyAt, isDue, isSoon, timeOfDayStr, nextDueDate, nextDueSerialized };

@@ -1,6 +1,6 @@
 const nodemailer = require('nodemailer');
 const { readData, writeData } = require('./data');
-const { getDueAt, getNotifyAt } = require('./time');
+const { getDueAt, getNotifyAt, timeOfDayStr } = require('./time');
 
 const pendingTimers = {};
 
@@ -90,7 +90,8 @@ async function fireNotification(taskId) {
     if (task.lastNotified && new Date(task.lastNotified) > cycleStart) return;
     const allUsers = data.settings.users || [];
     const targets  = task.assignee === 'alle' ? allUsers.map(u => u.id) : [task.assignee];
-    const timeStr  = task.dueTime ? ` at ${task.dueTime}` : '';
+    const tod      = timeOfDayStr(getDueAt(task), data.settings.timezone);
+    const timeStr  = tod !== '00:00' ? ` at ${tod}` : '';
     const soon     = task.notifyOffset && task.notifyOffset > 0;
     const msg      = `"${task.name}" is${soon ? ' almost' : ''} due${timeStr}`;
     console.log(`[Notify] ${msg}`);
