@@ -1,5 +1,5 @@
 name: Steward
-version: "1.6.16"
+version: "1.6.17"
 slug: steward
 description: Home Assistant Task Planner — recurring tasks, scheduling, notifications and gamification
 url: https://github.com/fahrstuhl1/steward-ha
@@ -10,6 +10,10 @@ startup: application
 boot: auto
 ingress: true
 ingress_port: 3000
+ports:
+  3000/tcp: 3456
+ports_description:
+  3000/tcp: "Web UI / API — needed for the Lovelace card, HA sensors and external webhook access (optional; Ingress works without it)"
 panel_icon: mdi:clipboard-list
 panel_title: Steward
 options:

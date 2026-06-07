@@ -1,5 +1,5 @@
 # 🏠 Steward — Home Assistant Add-on Repository
-![Version](https://img.shields.io/badge/version-1.6.16-blue?style=flat-square)
+![Version](https://img.shields.io/badge/version-1.6.17-blue?style=flat-square)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![HACS](https://img.shields.io/badge/HACS-Custom%20Repository-orange?style=flat-square)](https://hacs.xyz)
 
@@ -97,6 +97,8 @@ value_template: >
 ```
 
 ### Lovelace Card
+The add-on exposes its web UI/API on host port **3456** by default (configurable under the add-on's **Network** settings — adjust the URLs below if you change it).
+
 For a styled card without templates, load `steward-card.js` as a resource:
 **Settings → Dashboards → Resources** → add URL `http://<ha-ip>:3456/steward-card.js` (type: JavaScript module)
 
