@@ -256,6 +256,50 @@
   </div>
 </div>
 
+<!-- Snooze Modal -->
+<div class="modal-overlay" id="snoozeModal">
+  <div class="modal" style="max-width:440px;">
+    <div class="modal-handle"></div>
+    <h2 data-i18n="snooze.title">⏰ Snooze</h2>
+    <div class="snooze-current-info" id="snoozeCurrentInfo" style="display:none">
+      <span id="snoozeCurrentText"></span>
+      <button type="button" class="snooze-cancel-link" onclick="submitUnsnooze()" data-i18n="snooze.cancel">Cancel snooze</button>
+    </div>
+    <div class="form-group">
+      <label data-i18n="snooze.label">Postpone for…</label>
+      <div class="interval-chips" id="snoozeChips">
+        <button type="button" class="interval-chip" data-value="15"   data-i18n="snooze.chip_15m">15 min</button>
+        <button type="button" class="interval-chip" data-value="30"   data-i18n="snooze.chip_30m">30 min</button>
+        <button type="button" class="interval-chip" data-value="60"   data-i18n="snooze.chip_1h">1 hour</button>
+        <button type="button" class="interval-chip active" data-value="120" data-i18n="snooze.chip_2h">2 hours</button>
+        <button type="button" class="interval-chip" data-value="240"  data-i18n="snooze.chip_4h">4 hours</button>
+        <button type="button" class="interval-chip" data-value="1440" data-i18n="snooze.chip_1d">1 day</button>
+        <button type="button" class="interval-chip" data-value="4320" data-i18n="snooze.chip_3d">3 days</button>
+        <button type="button" class="interval-chip" data-value="custom" data-i18n="chip.custom">Custom…</button>
+      </div>
+      <input type="hidden" id="snoozeMinutes" value="120" />
+    </div>
+    <div class="form-row" id="snoozeCustomRow" style="display:none">
+      <div class="form-group">
+        <label data-i18n="snooze.custom_amount">Amount</label>
+        <input type="number" id="snoozeCustomAmount" min="1" value="1" />
+      </div>
+      <div class="form-group">
+        <label data-i18n="snooze.custom_unit">Unit</label>
+        <select id="snoozeCustomUnit">
+          <option value="minutes" data-i18n="snooze.unit_minutes">Minutes</option>
+          <option value="hours" data-i18n="snooze.unit_hours" selected>Hours</option>
+          <option value="days" data-i18n="snooze.unit_days">Days</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeSnoozeModal()" data-i18n="btn.cancel">Cancel</button>
+      <button class="btn btn-primary"   onclick="submitSnooze()" data-i18n="btn.snooze">Snooze</button>
+    </div>
+  </div>
+</div>
+
 <!-- Settings Modal -->
 <div class="modal-overlay" id="settingsModal">
   <div class="modal" style="max-width:540px;">

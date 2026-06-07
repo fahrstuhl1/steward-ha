@@ -141,11 +141,21 @@ router.post('/:id/snooze', (req, res) => {
   const data = readData();
   const task = data.tasks.find(t => t.id === req.params.id);
   if (!task) return res.status(404).json({ error: 'Not found' });
-  const hours = Number(req.body.hours) || 2;
-  task.snoozedUntil = new Date(Date.now() + hours * 3600000).toISOString();
+  const minutes = Number(req.body.minutes) || (Number(req.body.hours) || 2) * 60;
+  task.snoozedUntil = new Date(Date.now() + minutes * 60000).toISOString();
   writeData(data); scheduleNotification(task);
-  console.log(`[Snooze] "${task.name}" snoozed for ${hours}h`);
+  console.log(`[Snooze] "${task.name}" snoozed for ${minutes} min`);
   res.json({ success: true, snoozedUntil: task.snoozedUntil });
+});
+
+router.post('/:id/unsnooze', (req, res) => {
+  const data = readData();
+  const task = data.tasks.find(t => t.id === req.params.id);
+  if (!task) return res.status(404).json({ error: 'Not found' });
+  task.snoozedUntil = null;
+  writeData(data); scheduleNotification(task);
+  console.log(`[Snooze] "${task.name}" snooze cancelled`);
+  res.json({ success: true });
 });
 
 router.get('/quick-complete/:taskId/:userId', (req, res) => {

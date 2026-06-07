@@ -112,8 +112,9 @@ function initSwipe() {
     const id = swipeTaskId; swipeActive = false; swipeTaskId = null;
     if (Math.abs(dy) > 60 || Math.abs(dx) < 80) return;
     const task = tasks.find(t => t.id === id); if (!task) return;
+    const isSnoozedNow = task.snoozedUntil && new Date(task.snoozedUntil) > new Date();
     if (dx > 0 && (task.isDue || task.isSoon)) toggleComplete(id);
-    else if (dx < 0) snoozeTask(id);
+    else if (dx < 0 && (task.isDue || task.isSoon || isSnoozedNow)) snoozeTask(id);
   }, {passive:true});
 }
 
@@ -182,6 +183,7 @@ async function init() {
   initPullToRefresh();
   initModalDrag();
   initLongPress();
+  _initSnoozeChips();
 }
 
 async function loadStats() {
@@ -510,7 +512,7 @@ function taskCard(t) {
   const intervalLabel = t.dueDate ? L('interval.once') : (t.intervalCustomDays ? L('interval.custom', {days: t.intervalCustomDays}) : (L('interval.' + t.interval) || t.interval));
   const notifyHint    = t.notifyOffset > 0 ? ` <span class="meta-text">${t.notifyOffset < 60 ? L('notify.hint_min', {n: t.notifyOffset}) : L('notify.hint_hour', {n: Math.round(t.notifyOffset/60)})}</span>` : '';
   const priorityDot   = t.priority && t.priority !== 'normal' ? `<span class="priority-dot priority-${t.priority}"></span>` : '';
-  const snoozeHint    = t.snoozedUntil && new Date(t.snoozedUntil) > new Date() ? `<div class="snooze-hint">${L('snooze.hint', {time: new Date(t.snoozedUntil).toLocaleTimeString(document.documentElement.lang === 'de' ? 'de-DE' : 'en-GB', {hour:'2-digit',minute:'2-digit'})})}</div>` : '';
+  const snoozeHint    = t.snoozedUntil && new Date(t.snoozedUntil) > new Date() ? `<div class="snooze-hint" onclick="event.stopPropagation();openSnoozeModal('${t.id}')">${L('snooze.hint', {time: new Date(t.snoozedUntil).toLocaleTimeString(document.documentElement.lang === 'de' ? 'de-DE' : 'en-GB', {hour:'2-digit',minute:'2-digit'})})}</div>` : '';
   const commentLine   = t.lastComment ? `<div class="comment-text">💬 ${t.lastComment}</div>` : '';
   const checkIcon     = isWaiting ? '⏳' : '✓';
   const nextDueStr    = formatNextDue(t.nextDueData) || t.nextDue;
@@ -594,11 +596,76 @@ async function submitComment(save) {
 }
 
 let actionInProgress = false;
-async function snoozeTask(id) {
-  if (actionInProgress) return;
+function snoozeTask(id) {
+  openSnoozeModal(id);
+}
+
+let snoozeTaskId = null;
+function openSnoozeModal(id) {
+  const task = tasks.find(t => t.id === id);
+  if (!task) return;
+  snoozeTaskId = id;
+  const infoEl = document.getElementById('snoozeCurrentInfo');
+  const textEl = document.getElementById('snoozeCurrentText');
+  const snoozedActive = task.snoozedUntil && new Date(task.snoozedUntil) > new Date();
+  if (snoozedActive) {
+    const time = new Date(task.snoozedUntil).toLocaleString(document.documentElement.lang === 'de' ? 'de-DE' : 'en-GB', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'});
+    textEl.textContent = L('snooze.current', { time });
+    infoEl.style.display = '';
+  } else {
+    infoEl.style.display = 'none';
+  }
+  document.getElementById('snoozeMinutes').value = '120';
+  document.getElementById('snoozeCustomAmount').value = '1';
+  document.getElementById('snoozeCustomUnit').value = 'hours';
+  document.getElementById('snoozeCustomRow').style.display = 'none';
+  document.querySelectorAll('#snoozeChips .interval-chip').forEach(c => c.classList.toggle('active', c.dataset.value === '120'));
+  document.getElementById('snoozeModal').classList.add('open');
+}
+function closeSnoozeModal() {
+  document.getElementById('snoozeModal').classList.remove('open');
+  snoozeTaskId = null;
+}
+
+function _initSnoozeChips() {
+  document.querySelectorAll('#snoozeChips .interval-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('#snoozeChips .interval-chip').forEach(c => c.classList.toggle('active', c === chip));
+      document.getElementById('snoozeMinutes').value = chip.dataset.value;
+      document.getElementById('snoozeCustomRow').style.display = chip.dataset.value === 'custom' ? '' : 'none';
+    });
+  });
+}
+
+function _snoozeMinutesFromForm() {
+  const val = document.getElementById('snoozeMinutes').value;
+  if (val !== 'custom') return Number(val);
+  const amount = Math.max(1, Number(document.getElementById('snoozeCustomAmount').value) || 1);
+  const unit   = document.getElementById('snoozeCustomUnit').value;
+  const factor = unit === 'days' ? 1440 : unit === 'hours' ? 60 : 1;
+  return amount * factor;
+}
+
+async function submitSnooze() {
+  if (!snoozeTaskId || actionInProgress) return;
+  const minutes = _snoozeMinutesFromForm();
+  if (!minutes || minutes < 1) return;
+  actionInProgress = true;
+  const btn = document.querySelector('#snoozeModal .btn-primary');
+  btnLoading(btn, true);
+  try {
+    await fetch(`api/tasks/${snoozeTaskId}/snooze`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ minutes }) });
+    closeSnoozeModal();
+    await loadTasks();
+  } finally { btnLoading(btn, false); actionInProgress = false; }
+}
+
+async function submitUnsnooze() {
+  if (!snoozeTaskId || actionInProgress) return;
   actionInProgress = true;
   try {
-    await fetch(`api/tasks/${id}/snooze`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({hours:2}) });
+    await fetch(`api/tasks/${snoozeTaskId}/unsnooze`, { method:'POST' });
+    closeSnoozeModal();
     await loadTasks();
   } finally { actionInProgress = false; }
 }
@@ -624,11 +691,12 @@ function openCtxMenu(e, taskId) {
   closeCtxMenu();
   const task = tasks.find(t => t.id === taskId);
   if (!task) return;
-  const isRecurring = !task.dueDate;
-  const isDueOrSoon = task.isDue || task.isSoon;
+  const isRecurring  = !task.dueDate;
+  const isDueOrSoon  = task.isDue || task.isSoon;
+  const isSnoozedNow = task.snoozedUntil && new Date(task.snoozedUntil) > new Date();
   const items = [
     `<button class="ctx-item" onclick="closeCtxMenu();openEditModal('${taskId}')">${L('btn.edit')}</button>`,
-    isDueOrSoon ? `<button class="ctx-item" onclick="closeCtxMenu();snoozeTask('${taskId}')">${L('btn.snooze')}</button>` : '',
+    (isDueOrSoon || isSnoozedNow) ? `<button class="ctx-item" onclick="closeCtxMenu();openSnoozeModal('${taskId}')">${L('btn.snooze')}</button>` : '',
     isRecurring  ? `<button class="ctx-item" onclick="closeCtxMenu();skipTask('${taskId}')">${L('btn.skip_task')}</button>` : '',
     `<button class="ctx-item" onclick="closeCtxMenu();duplicateTask('${taskId}')">${L('btn.duplicate')}</button>`,
     `<button class="ctx-item ctx-item-danger" onclick="closeCtxMenu();deleteTask('${taskId}')">${L('btn.delete')}</button>`,

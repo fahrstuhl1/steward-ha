@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.6.15
+### Improvements
+- **Neuer Zurückstellen-Dialog**: Statt der Aufgabe sofort fest 2 Stunden zu geben, öffnet „Zurückstellen" jetzt ein Pop-up, in dem die Dauer frei in Minuten, Stunden oder Tagen gewählt werden kann (inkl. Schnellauswahl-Chips wie „15 Min.", „1 Stunde", „1 Tag", „3 Tage")
+- **Zurückstellen aufheben**: Im selben Pop-up zeigt ein Hinweis „Zurückgestellt bis …" den aktuellen Status an und bietet einen Schalter, um die Zurückstellung direkt wieder aufzuheben — auch über den ⏰-Hinweis auf der Aufgaben-Karte erreichbar
+- **Zurückgestellte Aufgaben verschwinden jetzt wirklich aus der Fällig-Liste**: `isDue`/`isSoon` berücksichtigen nun `snoozedUntil` — eine für einen Tag zurückgestellte Aufgabe taucht für diese Zeit nicht mehr in der Übersicht, im „···"-Menü als „Zurückstellen"-Option oder mit rotem/gelbem Status-Badge auf, und erscheint automatisch wieder, sobald die Zurückstellung abgelaufen ist
+
 ## 1.6.14
 ### Improvements
 - **NLP Quick-Add: Mehr natürliche Formulierungen erkannt**: Der Parser versteht jetzt deutlich mehr alltägliche Formulierungen, u. a.

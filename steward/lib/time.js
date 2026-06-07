@@ -69,7 +69,12 @@ function timeOfDayStr(ms, timezone) {
   return new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: tz }).format(new Date(ms));
 }
 
+function isSnoozed(task) {
+  return !!(task.snoozedUntil && new Date(task.snoozedUntil).getTime() > Date.now());
+}
+
 function isDue(task, timezone) {
+  if (isSnoozed(task)) return false;
   const now = Date.now();
   const dueAt = getDueAt(task);
   if (task.dueDate) {
@@ -79,6 +84,7 @@ function isDue(task, timezone) {
 }
 
 function isSoon(task, timezone) {
+  if (isSnoozed(task)) return false;
   if (isDue(task, timezone)) return false;
   const now = Date.now();
   const dueAt = getDueAt(task);
@@ -129,4 +135,4 @@ function nextDueSerialized(task, timezone) {
   return { key: 'due.in_days', days: diff, time };
 }
 
-module.exports = { INTERVAL_DAYS, INTERVAL_LABELS, getIntervalMs, getScheduledDueAt, getDueAt, getNotifyAt, isDue, isSoon, timeOfDayStr, nextDueDate, nextDueSerialized };
+module.exports = { INTERVAL_DAYS, INTERVAL_LABELS, getIntervalMs, getScheduledDueAt, getDueAt, getNotifyAt, isSnoozed, isDue, isSoon, timeOfDayStr, nextDueDate, nextDueSerialized };
