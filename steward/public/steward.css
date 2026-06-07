@@ -241,7 +241,7 @@ main { max-width: 640px; margin: 0 auto; padding: 16px 14px 60px; }
 .subtask-item.subtask-done span { color:var(--text3); text-decoration:line-through; }
 .subtask-input-row { display:flex; align-items:center; gap:6px; margin-bottom:5px; }
 .subtask-input-row input[type=text] { flex:1; }
-.subtask-input-row input[type=checkbox] { cursor:pointer; flex-shrink:0; }
+.subtask-input-row input[type=checkbox] { width:auto !important; flex:none; flex-shrink:0; cursor:pointer; }
 .search-bar { display:none; padding:0 16px 8px; }
 .search-bar.open { display:block; }
 .search-input { width:100%; padding:8px 12px; background:var(--surface2); border:1px solid var(--border2); border-radius:var(--r-sm); font-size:0.86rem; color:var(--text); outline:none; }
