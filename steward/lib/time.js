@@ -64,6 +64,11 @@ function calendarDateStr(ms, timezone) {
   return new Date(ms).toLocaleDateString('en-CA', { timeZone: tz }); // YYYY-MM-DD
 }
 
+function timeOfDayStr(ms, timezone) {
+  const tz = timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+  return new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: tz }).format(new Date(ms));
+}
+
 function isDue(task, timezone) {
   const now = Date.now();
   const dueAt = getDueAt(task);
@@ -86,7 +91,8 @@ function isSoon(task, timezone) {
 function nextDueDate(task, timezone) {
   const dueAt   = getDueAt(task);
   const now     = Date.now();
-  const timeStr = task.dueTime ? ` at ${task.dueTime}` : '';
+  const tod     = timeOfDayStr(dueAt, timezone);
+  const timeStr = tod !== '00:00' ? ` at ${tod}` : '';
   if (task.dueDate) {
     if (task.lastCompleted && new Date(task.lastCompleted).getTime() >= dueAt) return 'Done';
     const diff = Math.ceil((dueAt - now) / 86400000);
@@ -105,7 +111,8 @@ function nextDueDate(task, timezone) {
 function nextDueSerialized(task, timezone) {
   const dueAt = getDueAt(task);
   const now   = Date.now();
-  const time  = task.dueTime || null;
+  const tod   = timeOfDayStr(dueAt, timezone);
+  const time  = tod !== '00:00' ? tod : null;
   if (task.dueDate) {
     if (task.lastCompleted && new Date(task.lastCompleted).getTime() >= dueAt)
       return { key: 'due.done' };
@@ -122,4 +129,4 @@ function nextDueSerialized(task, timezone) {
   return { key: 'due.in_days', days: diff, time };
 }
 
-module.exports = { INTERVAL_DAYS, INTERVAL_LABELS, getIntervalMs, getScheduledDueAt, getDueAt, getNotifyAt, isDue, isSoon, nextDueDate, nextDueSerialized };
+module.exports = { INTERVAL_DAYS, INTERVAL_LABELS, getIntervalMs, getScheduledDueAt, getDueAt, getNotifyAt, isDue, isSoon, timeOfDayStr, nextDueDate, nextDueSerialized };

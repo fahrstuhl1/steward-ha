@@ -172,6 +172,7 @@ main { max-width: 640px; margin: 0 auto; padding: 16px 14px 60px; }
 .form-group > label { display: block; font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text3); margin-bottom: 5px; }
 .form-group input, .form-group select { width: 100%; padding: 9px 11px; background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--r-sm); font-size: 0.86rem; color: var(--text); outline: none; appearance: none; -webkit-appearance: none; transition: border-color 0.12s; }
 .form-group input::placeholder { color: var(--text3); }
+.form-group input:disabled, .form-group select:disabled { opacity: 0.5; cursor: not-allowed; }
 .form-group select option { background: #222535; }
 .form-group input:focus, .form-group select:focus { border-color: #5b9cf6; }
 .form-row { display: flex; gap: 8px; }
@@ -241,7 +242,7 @@ main { max-width: 640px; margin: 0 auto; padding: 16px 14px 60px; }
 .subtask-item.subtask-done span { color:var(--text3); text-decoration:line-through; }
 .subtask-input-row { display:flex; align-items:center; gap:6px; margin-bottom:5px; }
 .subtask-input-row input[type=text] { flex:1; }
-.subtask-input-row input[type=checkbox] { cursor:pointer; flex-shrink:0; }
+.subtask-input-row input[type=checkbox] { width:auto !important; flex:none; flex-shrink:0; cursor:pointer; }
 .search-bar { display:none; padding:0 16px 8px; }
 .search-bar.open { display:block; }
 .search-input { width:100%; padding:8px 12px; background:var(--surface2); border:1px solid var(--border2); border-radius:var(--r-sm); font-size:0.86rem; color:var(--text); outline:none; }

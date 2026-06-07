@@ -61,6 +61,11 @@ function migrateData(data) {
     changed = true;
   }
 
+  if (data.settings.vacationEnabled === undefined) {
+    data.settings.vacationEnabled = !!(data.settings.vacationFrom && data.settings.vacationTo);
+    changed = true;
+  }
+
   for (const task of data.tasks) {
     if (task.notifications !== undefined && task.notify === undefined) {
       task.notify = !!(task.notifications.ha || task.notifications.email);
@@ -74,6 +79,7 @@ function migrateData(data) {
 }
 
 function isOnVacation(settings) {
+  if (!settings.vacationEnabled) return false;
   const vacFrom = settings.vacationFrom ? new Date(settings.vacationFrom)              : null;
   const vacTo   = settings.vacationTo   ? new Date(settings.vacationTo + 'T23:59:59') : null;
   return !!(vacFrom && vacTo && new Date() >= vacFrom && new Date() <= vacTo);

@@ -1,8 +1,19 @@
 const nodemailer = require('nodemailer');
 const { readData, writeData } = require('./data');
-const { getDueAt, getNotifyAt } = require('./time');
+const { getDueAt, getNotifyAt, timeOfDayStr } = require('./time');
 
 const pendingTimers = {};
+
+// Guards against the timer-based fireNotification() and the cron fallback
+// racing each other and both sending a notification for the same task.
+const notifying = new Set();
+function tryLockNotify(taskId) {
+  if (notifying.has(taskId)) return false;
+  notifying.add(taskId);
+  return true;
+}
+function unlockNotify(taskId) { notifying.delete(taskId); }
+
 
 function getUser(data, userId) {
   return (data.settings.users || []).find(u => u.id === userId);
@@ -70,23 +81,29 @@ function notifyOthersOnCompletion(data, task, userId) {
 }
 
 async function fireNotification(taskId) {
-  const data = readData();
-  const task = data.tasks.find(t => t.id === taskId);
-  if (!task) return;
-  const cycleStart = task.lastCompleted ? new Date(task.lastCompleted) : new Date(0);
-  if (task.lastNotified && new Date(task.lastNotified) > cycleStart) return;
-  const allUsers = data.settings.users || [];
-  const targets  = task.assignee === 'alle' ? allUsers.map(u => u.id) : [task.assignee];
-  const timeStr  = task.dueTime ? ` at ${task.dueTime}` : '';
-  const soon     = task.notifyOffset && task.notifyOffset > 0;
-  const msg      = `"${task.name}" is${soon ? ' almost' : ''} due${timeStr}`;
-  console.log(`[Notify] ${msg}`);
-  for (const userId of targets) {
-    await sendHaNotify(data, userId, '🏠 Task due', msg, task.id);
-    try { await sendEmail(data, userId, task.name, msg); } catch(e) { if (data.settings.gmailUser) console.error(`[Notify] email ${userId}: ${e.message}`); }
+  if (!tryLockNotify(taskId)) return;
+  try {
+    const data = readData();
+    const task = data.tasks.find(t => t.id === taskId);
+    if (!task) return;
+    const cycleStart = task.lastCompleted ? new Date(task.lastCompleted) : new Date(0);
+    if (task.lastNotified && new Date(task.lastNotified) > cycleStart) return;
+    const allUsers = data.settings.users || [];
+    const targets  = task.assignee === 'alle' ? allUsers.map(u => u.id) : [task.assignee];
+    const tod      = timeOfDayStr(getDueAt(task), data.settings.timezone);
+    const timeStr  = tod !== '00:00' ? ` at ${tod}` : '';
+    const soon     = task.notifyOffset && task.notifyOffset > 0;
+    const msg      = `"${task.name}" is${soon ? ' almost' : ''} due${timeStr}`;
+    console.log(`[Notify] ${msg}`);
+    for (const userId of targets) {
+      await sendHaNotify(data, userId, '🏠 Task due', msg, task.id);
+      try { await sendEmail(data, userId, task.name, msg); } catch(e) { if (data.settings.gmailUser) console.error(`[Notify] email ${userId}: ${e.message}`); }
+    }
+    task.lastNotified = new Date().toISOString();
+    writeData(data);
+  } finally {
+    unlockNotify(taskId);
   }
-  task.lastNotified = new Date().toISOString();
-  writeData(data);
 }
 
 function scheduleNotification(task) {
@@ -117,4 +134,4 @@ function restoreTimers() {
   if (n) console.log(`[Schedule] ${n} timers restored`);
 }
 
-module.exports = { pendingTimers, getUser, sendHaNotify, sendEmail, notifyOthersOnCompletion, fireNotification, scheduleNotification, restoreTimers };
+module.exports = { pendingTimers, tryLockNotify, unlockNotify, getUser, sendHaNotify, sendEmail, notifyOthersOnCompletion, fireNotification, scheduleNotification, restoreTimers };
