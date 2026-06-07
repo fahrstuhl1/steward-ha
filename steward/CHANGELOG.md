@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.6.14
+### Improvements
+- **NLP Quick-Add: Mehr natürliche Formulierungen erkannt**: Der Parser versteht jetzt deutlich mehr alltägliche Formulierungen, u. a.
+  - Konversationelle Einleitungen wie „Ich möchte …" / „I want to …" / „I'd like to …" werden vor der Analyse entfernt
+  - Relative Tagesangaben „heute" / „morgen" / „übermorgen" / „today" / „tomorrow" setzen automatisch das passende Fälligkeitsdatum als einmalige Aufgabe (z. B. „Ich möchte morgen das Badezimmer wischen")
+  - Wochentags-Wiederholungen „jeden Freitag", „montags" usw. setzen ein wöchentliches Intervall mit Start am nächsten passenden Wochentag
+  - Uhrzeiten („um 17:00 Uhr", „17 Uhr", „at 5pm") werden erkannt und als Fälligkeitszeit übernommen (z. B. „Ich möchte jeden Freitag um 17:00 Uhr das Badezimmer waschen")
+  - „jeden Tag" / „jeden Morgen" / „jeden Abend" / „every morning/evening/night" werden als tägliches Intervall erkannt
+  - Namens-Erkennung von Personen/Räumen nutzt jetzt Wortgrenzen, sodass z. B. ein Raum „Bad" nicht mehr versehentlich in „Badezimmer" matcht
+
+### Fixes
+- **NLP: „Übermorgen …" wurde nie erkannt**: Das Wortgrenzen-Pattern (`\b`) behandelte den nicht-ASCII-Anfangsbuchstaben „Ü" nicht als Wortzeichen, wodurch „übermorgen" nie zugeordnet wurde — jetzt mit Unicode-bewusster Wortgrenze gelöst
+- **NLP: „jeden Morgen" wurde fälschlich als „morgen" (= „tomorrow") interpretiert**: „jeden Morgen die Küche lüften" wurde als „morgen fällig" statt als wiederkehrende Aufgabe erkannt — neue Ausschlussregel unterscheidet „jeden Morgen" (= täglich) von „morgen" (= relatives Datum)
+
+## 1.6.13
+### Fixes
+- **NLP Quick-Add: „jeden zweiten Tag" / „alle N Tage"**: Der Parser erkannte Formulierungen wie „jeden zweiten Tag", „alle 3 Tage" oder „every other day" nicht und fiel auf das Standard-Intervall „Wöchentlich" zurück — jetzt werden sie korrekt als Eigenes Intervall (z. B. „Alle 2 Tage") erkannt
+
+---
+
 ## 1.6.12
 ### Improvements
 - **Urlaubsmodus-Aktivierung**: Der Zeitraum (Von/Bis) ist jetzt nur noch einstellbar, wenn der Urlaubsmodus über den neuen Schalter aktiviert ist — verhindert versehentlich aktiven Urlaubsmodus durch bereits gesetzte Daten
