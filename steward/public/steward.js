@@ -1157,41 +1157,84 @@ const NLP_ORDINAL_DAYS = {
   zweiten:2, dritten:3, vierten:4, fünften:5, sechsten:6, siebten:7, achten:8, neunten:9, zehnten:10,
   second:2, third:3, fourth:4, fifth:5, sixth:6, seventh:7, eighth:8, ninth:9, tenth:10
 };
+const NLP_WEEKDAYS = {
+  montag:1, dienstag:2, mittwoch:3, donnerstag:4, freitag:5, samstag:6, sonntag:0,
+  monday:1, tuesday:2, wednesday:3, thursday:4, friday:5, saturday:6, sunday:0
+};
+const NLP_RELATIVE_DAYS = { heute:0, today:0, morgen:1, tomorrow:1, übermorgen:2 };
+// Strip conversational lead-ins ("Ich möchte …", "I want to …") that carry no task info
+const NLP_LEAD_IN = /^(?:ich\s+(?:möchte|will|muss|sollte)(?:\s+gerne)?|ich\s+würde\s+gerne|i\s+(?:want|need)\s+to|i'd\s+like\s+to|i\s+should)\s+/i;
 
 function parseNLP(text) {
-  const result = { name: text.trim(), interval: 'weekly', intervalCustomDays: null, dueDate: null, assignee: null, room: null };
-  let customMatch = text.match(/\balle\s+(\d+)\s+tage\b/i) || text.match(/\bevery\s+(\d+)\s+days\b/i);
+  const result = { name: text.trim(), interval: 'weekly', intervalCustomDays: null, dueDate: null, dueTime: null, startDate: null, assignee: null, room: null };
+  const working = text.replace(NLP_LEAD_IN, '');
+
+  // Time of day: "um 17:00 Uhr", "17 Uhr", "at 5pm"
+  const timeMatch = working.match(/\b(?:um\s+)?(\d{1,2})(?:[:.](\d{2}))?\s*uhr\b/i);
+  const ampmMatch = !timeMatch && working.match(/\b(?:at\s+)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/i);
+  if (timeMatch) {
+    result.dueTime = `${timeMatch[1].padStart(2,'0')}:${(timeMatch[2]||'00').padStart(2,'0')}`;
+  } else if (ampmMatch) {
+    let h = parseInt(ampmMatch[1], 10) % 12;
+    if (/pm/i.test(ampmMatch[3])) h += 12;
+    result.dueTime = `${String(h).padStart(2,'0')}:${(ampmMatch[2]||'00').padStart(2,'0')}`;
+  }
+  const timeFullMatch = timeMatch || ampmMatch;
+
+  // Recurrence / due-date detection — most specific wins
+  const dateMatch     = working.match(/(\d{1,2})[.\-/](\d{1,2})(?:[.\-/](\d{2,4}))?(?!\s*uhr)/i);
+  // Negative lookbehind excludes "jeden/jede/every Morgen" (= "every morning", a recurrence, not "tomorrow")
+  const relMatch      = working.match(/(?<![\p{L}\p{N}_])(?<!jeden\s)(?<!jede\s)(?<!every\s)(übermorgen|morgen|heute|tomorrow|today)(?![\p{L}\p{N}_])/iu);
+  const weekdayMatch  = working.match(/\b(?:jeden|jede|every)\s+(montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag|monday|tuesday|wednesday|thursday|friday|saturday|sunday)s?\b/i)
+                     || working.match(/\b(montags|dienstags|mittwochs|donnerstags|freitags|samstags|sonntags)\b/i);
+  let customMatch = working.match(/\balle\s+(\d+)\s+tage\b/i) || working.match(/\bevery\s+(\d+)\s+days\b/i);
   let customDays  = customMatch ? parseInt(customMatch[1], 10) : null;
   if (!customDays) {
-    const ordMatch = text.match(/\b(?:jeden|every)\s+(\w+)\s+(?:tag|day)\b/i);
+    const ordMatch = working.match(/\b(?:jeden|every)\s+(\w+)\s+(?:tag|day)\b/i);
     if (ordMatch && NLP_ORDINAL_DAYS[ordMatch[1].toLowerCase()]) { customDays = NLP_ORDINAL_DAYS[ordMatch[1].toLowerCase()]; customMatch = ordMatch; }
   }
-  if (!customDays && /\bevery other day\b/i.test(text)) { customDays = 2; customMatch = text.match(/\bevery other day\b/i); }
+  if (!customDays && /\bevery other day\b/i.test(working)) { customDays = 2; customMatch = working.match(/\bevery other day\b/i); }
 
-  if (customDays >= 2) {
-    result.interval = 'custom';
-    result.intervalCustomDays = customDays;
-  }
-  else if (/täglich|every day|daily/i.test(text))                        result.interval = 'daily';
-  else if (/zweiwöchentlich|every two weeks|biweekly|alle 2 wochen/i.test(text)) result.interval = 'biweekly';
-  else if (/monatlich|every month|monthly/i.test(text))                  result.interval = 'monthly';
-  else if (/vierteljährlich|quarterly/i.test(text))                      result.interval = 'quarterly';
-  else if (/wöchentlich|every week|weekly/i.test(text))                  result.interval = 'weekly';
-  const dateMatch = text.match(/(\d{1,2})[.\-/](\d{1,2})(?:[.\-/](\d{2,4}))?/);
+  let recurrenceMatch = null;
   if (dateMatch) {
     const d = dateMatch[1].padStart(2, '0'), m = dateMatch[2].padStart(2, '0');
     const y = dateMatch[3] ? (dateMatch[3].length === 2 ? '20' + dateMatch[3] : dateMatch[3]) : new Date().getFullYear();
     result.dueDate = `${y}-${m}-${d}`; result.interval = 'once'; result.intervalCustomDays = null;
+    recurrenceMatch = dateMatch;
+  } else if (relMatch) {
+    const days = NLP_RELATIVE_DAYS[relMatch[1].toLowerCase()];
+    const d = new Date(); d.setDate(d.getDate() + days);
+    result.dueDate = d.toISOString().slice(0, 10); result.interval = 'once'; result.intervalCustomDays = null;
+    recurrenceMatch = relMatch;
+  } else if (weekdayMatch) {
+    const dow = NLP_WEEKDAYS[weekdayMatch[1].toLowerCase().replace(/s$/, '')];
+    const d = new Date(); d.setDate(d.getDate() + ((dow - d.getDay() + 7) % 7));
+    result.startDate = d.toISOString().slice(0, 10); result.interval = 'weekly'; result.intervalCustomDays = null;
+    recurrenceMatch = weekdayMatch;
+  } else if (customDays >= 2) {
+    result.interval = 'custom'; result.intervalCustomDays = customDays;
+    recurrenceMatch = customMatch;
   }
+  else if (/täglich|every day|daily|jeden\s+(?:tag|morgen|abend)|every\s+(?:morning|evening|night)/i.test(working)) result.interval = 'daily';
+  else if (/zweiwöchentlich|every two weeks|biweekly|alle 2 wochen/i.test(working)) result.interval = 'biweekly';
+  else if (/monatlich|every month|monthly/i.test(working))                  result.interval = 'monthly';
+  else if (/vierteljährlich|quarterly/i.test(working))                      result.interval = 'quarterly';
+  else if (/wöchentlich|every week|weekly/i.test(working))                  result.interval = 'weekly';
+
   const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  let cleanName = text;
-  users.forEach(u => { const re = new RegExp(esc(u.name), 'gi'); if (re.test(text)) { result.assignee = u.id; cleanName = cleanName.replace(new RegExp(esc(u.name), 'gi'), ''); } });
-  rooms.forEach(r => { const re = new RegExp(esc(r.name), 'gi'); if (re.test(text)) { result.room = r.id; cleanName = cleanName.replace(new RegExp(esc(r.name), 'gi'), ''); } });
+  let cleanName = working;
+  users.forEach(u => { const re = new RegExp('\\b' + esc(u.name) + '\\b', 'gi'); if (re.test(working)) { result.assignee = u.id; cleanName = cleanName.replace(re, ''); } });
+  rooms.forEach(r => { const re = new RegExp('\\b' + esc(r.name) + '\\b', 'gi'); if (re.test(working)) { result.room = r.id; cleanName = cleanName.replace(re, ''); } });
   cleanName = cleanName
-    .replace(/täglich|every day|daily|zweiwöchentlich|every two weeks|biweekly|alle 2 wochen|monatlich|every month|monthly|vierteljährlich|quarterly|wöchentlich|every week|weekly/gi, '')
-    .replace(customMatch ? customMatch[0] : /(?:)/, '')
-    .replace(dateMatch ? dateMatch[0] : /(?:)/, '')
-    .trim().replace(/\s+/g, ' ');
+    .replace(/täglich|every day|daily|jeden\s+(?:tag|morgen|abend)|every\s+(?:morning|evening|night)|zweiwöchentlich|every two weeks|biweekly|alle 2 wochen|monatlich|every month|monthly|vierteljährlich|quarterly|wöchentlich|every week|weekly/gi, '')
+    .replace(recurrenceMatch ? recurrenceMatch[0] : /(?:)/, '')
+    .replace(timeFullMatch ? timeFullMatch[0] : /(?:)/, '')
+    .trim().replace(/\s+/g, ' ')
+    .replace(/^(?:der|die|das|den|dem|the|a|an)\s+/i, '')
+    .replace(/\s+(?:der|die|das|den|dem|the|a|an)$/i, '')
+    .replace(/[.,;:]+\s*$/, '').trim()
+    .replace(/\s+(?:am|an|um|on|at)$/i, '')
+    .trim();
   if (cleanName) result.name = cleanName;
   return result;
 }
@@ -1203,7 +1246,9 @@ function updateNlpTags() {
   const tags = [];
   if (p.interval === 'custom' && p.intervalCustomDays) tags.push(`<span class="nlp-tag">${L('interval.custom', {days: p.intervalCustomDays})}</span>`);
   else if (p.interval && p.interval !== 'once') tags.push(`<span class="nlp-tag">${L('interval.' + p.interval) || p.interval}</span>`);
-  if (p.dueDate)  tags.push(`<span class="nlp-tag">${p.dueDate}</span>`);
+  if (p.dueDate)  tags.push(`<span class="nlp-tag">${p.dueDate}${p.dueTime ? ' ' + p.dueTime : ''}</span>`);
+  else if (p.startDate) tags.push(`<span class="nlp-tag">${p.startDate}${p.dueTime ? ' ' + p.dueTime : ''}</span>`);
+  else if (p.dueTime) tags.push(`<span class="nlp-tag">${p.dueTime}</span>`);
   if (p.assignee) { const u = users.find(u => u.id === p.assignee); if (u) tags.push(`<span class="nlp-tag" style="border-color:${u.color};color:${u.color}">${u.name}</span>`); }
   if (p.room)     { const r = rooms.find(r => r.id === p.room); if (r) tags.push(`<span class="nlp-tag">${r.icon} ${r.name}</span>`); }
   document.getElementById('nlpTags').innerHTML = tags.join('');
@@ -1226,6 +1271,8 @@ async function submitNlp() {
     interval:  p.interval || 'weekly',
     intervalCustomDays: p.intervalCustomDays || null,
     dueDate:   p.dueDate  || null,
+    dueTime:   p.dueTime  || null,
+    startDate: p.startDate || null,
     assignee:  p.assignee || (currentView !== 'alle' ? currentView : (users[0]?.id || 'alle')),
     room:      p.room     || (currentGroup !== 'alle' ? currentGroup : 'general'),
     priority:  'normal',
