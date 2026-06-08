@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.6.19
+### Fixes
+- **Completions are now recorded for the History view even when Gamification is disabled**: completions used to be written to `data.completions` only while the points/leaderboard system was enabled, so the new completion History view (1.6.18) stayed empty for households that turned Gamification off. Recording is now decoupled from that toggle — points are still computed and stored in the background but the leaderboard UI remains hidden as before
+
 ## 1.6.18
 ### New Features
 - **Completion history for recurring tasks**: New "History" entry in a task's "···" menu opens a modal listing all of its past completions (date, person, comment and photo) — previously this data was captured on every completion (`data.completions`) but had no UI for recurring tasks; only one-time tasks exposed it via the Archive
