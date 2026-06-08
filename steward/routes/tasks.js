@@ -100,10 +100,8 @@ router.post('/:id/complete', (req, res) => {
   task.lastComment   = req.body.comment || null;
   task.lastNotified  = null;
   task.snoozedUntil  = null;
-  if (data.settings.gamificationEnabled !== false) {
-    if (!data.completions) data.completions = [];
-    data.completions.push({ id: uuidv4(), taskId: task.id, taskName: task.name, userId, points, date: task.lastCompleted, comment: task.lastComment, photo: req.body.photo || null });
-  }
+  if (!data.completions) data.completions = [];
+  data.completions.push({ id: uuidv4(), taskId: task.id, taskName: task.name, userId, points, date: task.lastCompleted, comment: task.lastComment, photo: req.body.photo || null });
   notifyOthersOnCompletion(data, task, userId);
   if (task.dueDate) {
     if (!data.archive) data.archive = [];
@@ -184,10 +182,8 @@ router.get('/quick-complete/:taskId/:userId', (req, res) => {
   task.completedBy   = userId;
   task.lastNotified  = null;
   task.snoozedUntil  = null;
-  if (data.settings.gamificationEnabled !== false) {
-    if (!data.completions) data.completions = [];
-    data.completions.push({ id: uuidv4(), taskId: task.id, taskName: task.name, userId, points, date: task.lastCompleted, comment: null });
-  }
+  if (!data.completions) data.completions = [];
+  data.completions.push({ id: uuidv4(), taskId: task.id, taskName: task.name, userId, points, date: task.lastCompleted, comment: null });
   notifyOthersOnCompletion(data, task, userId);
   writeData(data); scheduleNotification(task); updateHaSensors();
   const user = (data.settings.users || []).find(u => u.id === req.params.userId);

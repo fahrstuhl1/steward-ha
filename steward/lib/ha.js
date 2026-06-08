@@ -228,10 +228,8 @@ function handleNotificationAction(eventData) {
     task.lastComment   = null;
     task.lastNotified  = null;
     task.snoozedUntil  = null;
-    if (data.settings.gamificationEnabled !== false) {
-      if (!data.completions) data.completions = [];
-      data.completions.push({ id: uuidv4(), taskId: task.id, taskName: task.name, userId, points, date: task.lastCompleted, comment: null });
-    }
+    if (!data.completions) data.completions = [];
+    data.completions.push({ id: uuidv4(), taskId: task.id, taskName: task.name, userId, points, date: task.lastCompleted, comment: null });
     notifyOthersOnCompletion(data, task, userId);
     if (task.dueDate) {
       if (!data.archive) data.archive = [];
