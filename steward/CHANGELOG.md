@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.6.18
+### New Features
+- **Completion history for recurring tasks**: New "History" entry in a task's "···" menu opens a modal listing all of its past completions (date, person, comment and photo) — previously this data was captured on every completion (`data.completions`) but had no UI for recurring tasks; only one-time tasks exposed it via the Archive
+
 ## 1.6.17
 ### Fixes
 - **Add-on now exposes its web UI/API via a host port**: `config.yaml` now declares a port (default: 3456 → internal 3000) including a description, so Home Assistant shows the Network/port-mapping section in the add-on settings. This makes the access method documented in the README — `http://<ha-ip>:3456` (Lovelace card, sensors, webhook) — actually work; previously the add-on was reachable only via Ingress and the documented port was unreachable

@@ -72,6 +72,16 @@ router.delete('/:id', (req, res) => {
   writeData(data); res.json({ success: true });
 });
 
+router.get('/:id/history', (req, res) => {
+  const data  = readData();
+  const users = data.settings.users || [];
+  const history = (data.completions || [])
+    .filter(c => c.taskId === req.params.id)
+    .sort((a, b) => new Date(b.date) - new Date(a.date))
+    .map(c => ({ ...c, userName: users.find(u => u.id === c.userId)?.name || c.userId }));
+  res.json(history);
+});
+
 router.post('/:id/complete', (req, res) => {
   const data   = readData();
   const task   = data.tasks.find(t => t.id === req.params.id);

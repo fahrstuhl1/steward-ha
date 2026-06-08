@@ -633,6 +633,23 @@ function closeSnoozeModal() {
   snoozeTaskId = null;
 }
 
+async function openHistoryModal(id) {
+  document.getElementById('historyModal').classList.add('open');
+  const list = document.getElementById('historyList');
+  list.innerHTML = `<div class="plan-empty">${L('empty.archive_loading')}</div>`;
+  const history = await (await fetch(`api/tasks/${id}/history`)).json();
+  if (!history.length) { list.innerHTML = `<div class="plan-empty">${L('empty.no_completions')}</div>`; return; }
+  list.innerHTML =
+    `<div style="font-size:0.75rem;color:var(--text3);margin-bottom:12px;">${L('history.count', {n: history.length})}</div>` +
+    history.map(c => {
+      const date = new Date(c.date).toLocaleString(document.documentElement.lang === 'de' ? 'de-DE' : 'en-GB', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+      return `<div class="archive-item"><div class="archive-info"><div class="archive-meta">${c.userName} · ${date}</div>${c.comment ? `<div class="archive-comment">💬 ${c.comment}</div>` : ''}${c.photo ? `<img class="archive-photo" src="${c.photo}" alt="" loading="lazy">` : ''}</div></div>`;
+    }).join('');
+}
+function closeHistoryModal() {
+  document.getElementById('historyModal').classList.remove('open');
+}
+
 function _initSnoozeChips() {
   document.querySelectorAll('#snoozeChips .interval-chip').forEach(chip => {
     chip.addEventListener('click', () => {
@@ -704,6 +721,7 @@ function openCtxMenu(e, taskId) {
     `<button class="ctx-item" onclick="closeCtxMenu();openEditModal('${taskId}')">${L('btn.edit')}</button>`,
     (isDueOrSoon || isSnoozedNow) ? `<button class="ctx-item" onclick="closeCtxMenu();openSnoozeModal('${taskId}')">${L('btn.snooze')}</button>` : '',
     isRecurring  ? `<button class="ctx-item" onclick="closeCtxMenu();skipTask('${taskId}')">${L('btn.skip_task')}</button>` : '',
+    isRecurring  ? `<button class="ctx-item" onclick="closeCtxMenu();openHistoryModal('${taskId}')">${L('btn.history')}</button>` : '',
     `<button class="ctx-item" onclick="closeCtxMenu();duplicateTask('${taskId}')">${L('btn.duplicate')}</button>`,
     `<button class="ctx-item ctx-item-danger" onclick="closeCtxMenu();deleteTask('${taskId}')">${L('btn.delete')}</button>`,
   ].filter(Boolean).join('');
