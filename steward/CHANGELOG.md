@@ -2,184 +2,184 @@
 
 ## 1.6.17
 ### Fixes
-- **Add-on gibt Web-UI/API jetzt über einen Host-Port frei**: `config.yaml` deklariert nun einen Port (Standard: 3456 → intern 3000) inkl. Beschreibung, sodass Home Assistant in den Add-on-Einstellungen die Netzwerk-/Port-Sektion anzeigt. Damit funktioniert der in der README dokumentierte Zugriff über `http://<ha-ip>:3456` (Lovelace-Karte, Sensoren, Webhook) tatsächlich — zuvor war das Add-on ausschließlich über Ingress erreichbar und der dokumentierte Port unerreichbar
-- README ergänzt: Hinweis, dass der Host-Port unter **Network**-Einstellungen des Add-ons konfigurierbar ist
+- **Add-on now exposes its web UI/API via a host port**: `config.yaml` now declares a port (default: 3456 → internal 3000) including a description, so Home Assistant shows the Network/port-mapping section in the add-on settings. This makes the access method documented in the README — `http://<ha-ip>:3456` (Lovelace card, sensors, webhook) — actually work; previously the add-on was reachable only via Ingress and the documented port was unreachable
+- README updated: noted that the host port is configurable under the add-on's **Network** settings
 
 ## 1.6.16
 ### Fixes
-- **Push-Benachrichtigungen und Aktionsschaltflächen jetzt lokalisiert**: Titel, Texte und Aktions-Buttons (z. B. „✓ Erledigt" / „⏰ 2 Std. später") von HA-Push-Benachrichtigungen und E-Mails folgen nun der in der App gewählten Sprache (Deutsch/Englisch) statt fest auf Englisch zu stehen — betrifft Erinnerungen an fällige Aufgaben, Benachrichtigungen über erledigte Aufgaben durch andere, neue Aufgaben aus HA-Triggern sowie die Test-Benachrichtigungen in den Einstellungen
-- Die Sprachauswahl wird jetzt zusätzlich serverseitig gespeichert (`Einstellungen`), damit der Hintergrunddienst beim Versenden von Benachrichtigungen weiß, welche Sprache zu verwenden ist
+- **Push notifications and action buttons now localized**: Titles, texts and action buttons (e.g. „✓ Done" / „⏰ 2h Snooze") of HA push notifications and emails now follow the language selected in the app (German/English) instead of being hardcoded to English — affects due-task reminders, notifications about completions by others, new tasks created from HA triggers, and the test notifications in settings
+- The language selection is now also stored server-side (`Settings`), so the background service knows which language to use when sending notifications
 
 ## 1.6.15
 ### Improvements
-- **Neuer Zurückstellen-Dialog**: Statt der Aufgabe sofort fest 2 Stunden zu geben, öffnet „Zurückstellen" jetzt ein Pop-up, in dem die Dauer frei in Minuten, Stunden oder Tagen gewählt werden kann (inkl. Schnellauswahl-Chips wie „15 Min.", „1 Stunde", „1 Tag", „3 Tage")
-- **Zurückstellen aufheben**: Im selben Pop-up zeigt ein Hinweis „Zurückgestellt bis …" den aktuellen Status an und bietet einen Schalter, um die Zurückstellung direkt wieder aufzuheben — auch über den ⏰-Hinweis auf der Aufgaben-Karte erreichbar
-- **Zurückgestellte Aufgaben verschwinden jetzt wirklich aus der Fällig-Liste**: `isDue`/`isSoon` berücksichtigen nun `snoozedUntil` — eine für einen Tag zurückgestellte Aufgabe taucht für diese Zeit nicht mehr in der Übersicht, im „···"-Menü als „Zurückstellen"-Option oder mit rotem/gelbem Status-Badge auf, und erscheint automatisch wieder, sobald die Zurückstellung abgelaufen ist
+- **New snooze dialog**: Instead of immediately giving the task a fixed 2-hour snooze, "Snooze" now opens a pop-up where the duration can be freely chosen in minutes, hours or days (including quick-select chips like "15 min", "1 hour", "1 day", "3 days")
+- **Cancel snooze**: The same pop-up shows a "Snoozed until …" hint with the current status and offers a toggle to cancel the snooze directly — also reachable via the ⏰ hint on the task card
+- **Snoozed tasks now actually disappear from the due list**: `isDue`/`isSoon` now take `snoozedUntil` into account — a task snoozed for a day no longer shows up in the overview, in the "···" menu as a "Snooze" option, or with a red/yellow status badge during that time, and reappears automatically once the snooze expires
 
 ## 1.6.14
 ### Improvements
-- **NLP Quick-Add: Mehr natürliche Formulierungen erkannt**: Der Parser versteht jetzt deutlich mehr alltägliche Formulierungen, u. a.
-  - Konversationelle Einleitungen wie „Ich möchte …" / „I want to …" / „I'd like to …" werden vor der Analyse entfernt
-  - Relative Tagesangaben „heute" / „morgen" / „übermorgen" / „today" / „tomorrow" setzen automatisch das passende Fälligkeitsdatum als einmalige Aufgabe (z. B. „Ich möchte morgen das Badezimmer wischen")
-  - Wochentags-Wiederholungen „jeden Freitag", „montags" usw. setzen ein wöchentliches Intervall mit Start am nächsten passenden Wochentag
-  - Uhrzeiten („um 17:00 Uhr", „17 Uhr", „at 5pm") werden erkannt und als Fälligkeitszeit übernommen (z. B. „Ich möchte jeden Freitag um 17:00 Uhr das Badezimmer waschen")
-  - „jeden Tag" / „jeden Morgen" / „jeden Abend" / „every morning/evening/night" werden als tägliches Intervall erkannt
-  - Namens-Erkennung von Personen/Räumen nutzt jetzt Wortgrenzen, sodass z. B. ein Raum „Bad" nicht mehr versehentlich in „Badezimmer" matcht
+- **NLP Quick-Add: more natural phrasings recognized**: The parser now understands significantly more everyday phrasings, including:
+  - Conversational lead-ins like „I want to …" / „I'd like to …" / „Ich möchte …" are stripped before analysis
+  - Relative day references „today" / „tomorrow" / „the day after tomorrow" / „heute" / „morgen" / „übermorgen" automatically set the matching due date as a one-time task (e.g. „I want to mop the bathroom tomorrow")
+  - Weekday repetitions „every Friday", „on Mondays" etc. set a weekly interval starting on the next matching weekday
+  - Times („at 5pm", „17:00", „5 o'clock") are recognized and adopted as the due time (e.g. „I want to wash the bathroom every Friday at 5pm")
+  - „every day" / „every morning" / „every evening" / „jeden Tag" / „jeden Morgen" / „jeden Abend" are recognized as a daily interval
+  - Name recognition for people/rooms now uses word boundaries, so e.g. a room called "Bath" no longer accidentally matches inside "Bathroom"
 
 ### Fixes
-- **NLP: „Übermorgen …" wurde nie erkannt**: Das Wortgrenzen-Pattern (`\b`) behandelte den nicht-ASCII-Anfangsbuchstaben „Ü" nicht als Wortzeichen, wodurch „übermorgen" nie zugeordnet wurde — jetzt mit Unicode-bewusster Wortgrenze gelöst
-- **NLP: „jeden Morgen" wurde fälschlich als „morgen" (= „tomorrow") interpretiert**: „jeden Morgen die Küche lüften" wurde als „morgen fällig" statt als wiederkehrende Aufgabe erkannt — neue Ausschlussregel unterscheidet „jeden Morgen" (= täglich) von „morgen" (= relatives Datum)
+- **NLP: „the day after tomorrow …" was never recognized**: The word-boundary pattern (`\b`) didn't treat the non-ASCII initial letter „Ü" as a word character, so „übermorgen" never matched — now fixed with a Unicode-aware word boundary
+- **NLP: „every morning" was incorrectly interpreted as „tomorrow"**: „air out the kitchen every morning" was recognized as „due tomorrow" instead of a recurring task — a new exclusion rule now distinguishes „every morning" (= daily) from „tomorrow" (= relative date)
 
 ## 1.6.13
 ### Fixes
-- **NLP Quick-Add: „jeden zweiten Tag" / „alle N Tage"**: Der Parser erkannte Formulierungen wie „jeden zweiten Tag", „alle 3 Tage" oder „every other day" nicht und fiel auf das Standard-Intervall „Wöchentlich" zurück — jetzt werden sie korrekt als Eigenes Intervall (z. B. „Alle 2 Tage") erkannt
+- **NLP Quick-Add: „every other day" / „every N days"**: The parser didn't recognize phrasings like „every other day", „every 3 days" or „jeden zweiten Tag" / „alle 3 Tage" and fell back to the default "Weekly" interval — these are now correctly recognized as a custom interval (e.g. "Every 2 days")
 
 ---
 
 ## 1.6.12
 ### Improvements
-- **Urlaubsmodus-Aktivierung**: Der Zeitraum (Von/Bis) ist jetzt nur noch einstellbar, wenn der Urlaubsmodus über den neuen Schalter aktiviert ist — verhindert versehentlich aktiven Urlaubsmodus durch bereits gesetzte Daten
+- **Vacation mode activation**: The date range (from/to) is now only editable once vacation mode is enabled via the new toggle — prevents vacation mode from becoming active by accident due to dates that were already set
 
 ### Fixes
-- **Falsche/fehlende Uhrzeit in Fälligkeitsanzeige**: Die angezeigte Uhrzeit wurde aus dem `dueTime`-Feld abgeleitet statt aus dem tatsächlich berechneten Fälligkeitszeitpunkt — nach Änderungen an Intervall, Uhrzeit oder Zeitplan-Modus konnte die Anzeige (z. B. "Heute" ohne Uhrzeit) vom echten Fälligkeitszeitpunkt abweichen
-- **Doppelte Fällig-Benachrichtigungen**: Der zeitgesteuerte Notifier und der 15-Minuten-Cron-Fallback konnten gleichzeitig auslösen und beide eine Push-Benachrichtigung für dieselbe Aufgabe senden — neue In-Memory-Sperre verhindert das gleichzeitige Senden
-- **Falsche Uhrzeit in Fällig-Benachrichtigungen**: Push-/E-Mail-Texte ("… is due at HH:MM") wurden ebenfalls aus dem statischen `dueTime`-Feld statt dem tatsächlich berechneten Fälligkeitszeitpunkt gebaut — betraf den zeitgesteuerten Notifier sowie den Cron-Fallback (Erst- und Wiederholungs-Erinnerung)
-- **Cron-Fallback ignorierte konfigurierte Zeitzone**: Der 15-Minuten-Fallback ermittelte die Benachrichtigungszeit für `notifyTimeWeekday`/`notifyTimeWeekend` anhand der Server-Zeitzone statt der in den Einstellungen hinterlegten Zeitzone — konnte nahe der Tageswechsel-Grenze den falschen Wochentag (Werktag/Wochenende) wählen
+- **Wrong/missing time in due display**: The displayed time was derived from the `dueTime` field instead of the actually computed due timestamp — after changes to interval, time or schedule mode, the display (e.g. "Today" without a time) could diverge from the real due time
+- **Duplicate due notifications**: The timer-based notifier and the 15-minute cron fallback could fire at the same time and both send a push notification for the same task — a new in-memory lock now prevents simultaneous sending
+- **Wrong time in due notifications**: Push/email texts ("… is due at HH:MM") were also built from the static `dueTime` field instead of the actually computed due timestamp — affected the timer-based notifier as well as the cron fallback (initial and repeat reminders)
+- **Cron fallback ignored the configured timezone**: The 15-minute fallback determined the notification time for `notifyTimeWeekday`/`notifyTimeWeekend` based on the server's timezone instead of the timezone configured in settings — could pick the wrong day type (weekday/weekend) near the day-change boundary
 
 ---
 
 ## 1.6.8
 ### New Features
-- **Sub-Tasks / Checklisten**: Aufgaben können jetzt eine Checkliste mit einzelnen Schritten bekommen (im Mehr-Optionen-Bereich des Aufgaben-Dialogs); Fortschritt wird auf der Task-Karte angezeigt und einzelne Schritte können dort direkt abgehakt werden
-- **Benachrichtigung bei Erledigung durch andere**: Optional (standardmäßig an) werden alle anderen Haushaltsmitglieder per Push/E-Mail informiert, wenn jemand eine Aufgabe abschließt — abschaltbar in den Einstellungen
-- **Wiederkehrende Erinnerung konfigurierbar**: Das Intervall für wiederholte „noch ausstehend"-Erinnerungen ist jetzt in den Einstellungen einstellbar (Standard weiterhin 24h) statt fest codiert
-- **Foto im Archiv**: Fotos, die beim Abschließen einer einmaligen Aufgabe hochgeladen wurden, werden jetzt auch in der Archiv-Ansicht angezeigt
+- **Sub-tasks / checklists**: Tasks can now have a checklist of individual steps (in the "more options" area of the task dialog); progress is shown on the task card and individual steps can be checked off directly there
+- **Notification on completion by others**: Optionally (on by default), all other household members are notified via push/email when someone completes a task — can be disabled in settings
+- **Configurable repeat reminder**: The interval for repeated "still pending" reminders is now configurable in settings (still defaults to 24h) instead of hardcoded
+- **Photo in archive**: Photos uploaded when completing a one-time task are now also shown in the archive view
 
 ### Fixes
-- README-Versionsbadge zeigte eine veraltete Versionsnummer
-- Veraltete `notifications`-Struktur im Webhook-Task-Endpunkt auf das aktuelle `notify`-Boolean-Modell umgestellt
+- README version badge showed an outdated version number
+- Replaced the legacy `notifications` structure in the webhook task endpoint with the current `notify` boolean model
 
 ---
 
 ## 1.6.7
 ### Improvements
-- **Lovelace Card: Aufgaben direkt abhaken** — neues optionales Config-Feld `complete_as: <userId>`; zeigt pro Task-Zeile einen ✓-Button, der die Aufgabe ohne Öffnen der Steward-UI als erledigt markiert; fällt auf `filter.person` zurück wenn `complete_as` nicht gesetzt ist
+- **Lovelace card: complete tasks directly** — new optional config field `complete_as: <userId>`; shows a ✓ button per task row that marks the task done without opening the Steward UI; falls back to `filter.person` when `complete_as` is not set
 
 ---
 
 ## 1.6.6
 ### Improvements
-- **Einzel-Benachrichtigungs-Toggle**: Pro Aufgabe gibt es jetzt nur noch einen „Notify"-Toggle (an/aus, Standard: an) statt separater HA- und E-Mail-Checkboxen — welche Kanäle genutzt werden, bestimmt allein die Nutzerkonfiguration
-- **Migration**: Bestehende Tasks mit `notifications.ha/email` werden beim Start automatisch auf `notify: boolean` migriert
-- **Kalender-iCal-URL**: Auch in der Kalenderansicht direkt zugänglich (Footer mit Copy-Button)
-- **Benutzer-Karten**: Nutzereinstellungen werden als lesbare Karten dargestellt statt als gequetschte Zeile
-- **Einstellungen neu sortiert**: Allgemein-Tab → Timezone, Urlaubsmodus, Gamification, Wochenzusammenfassung, Archiv; Aufgaben-Modal → Benachrichtigung zuerst, Zeitfelder nur wenn Notify aktiv
+- **Single notification toggle**: Each task now has just one "Notify" toggle (on/off, default: on) instead of separate HA and email checkboxes — which channels are actually used is determined solely by the user's configuration
+- **Migration**: Existing tasks with `notifications.ha/email` are automatically migrated to `notify: boolean` on startup
+- **Calendar iCal URL**: Now also directly accessible from the calendar view (footer with copy button)
+- **User cards**: User settings are now shown as readable cards instead of a cramped row
+- **Settings reorganized**: General tab → timezone, vacation mode, gamification, weekly summary, archive; task modal → notification first, time fields only shown when notify is active
 
 ---
 
 ## 1.6.5
 ### New Features
-- **iCal Calendar Feed** — neuer Endpunkt `GET /api/calendar.ics` liefert alle anstehenden Tasks als RFC 5545 iCal-Feed; in HA unter Settings → Integrations → Calendar (iCal) eintragen
-- Aufgaben mit Uhrzeit erscheinen als Termin, Aufgaben ohne Uhrzeit als Ganztages-Ereignis
-- Wiederkehrende Tasks werden 90 Tage im Voraus expandiert (max. 52 Vorkommen)
-- Priorität wird als iCal PRIORITY (1/5/9) übertragen
-- URL wird in den Einstellungen (HA-Tab) angezeigt und kann per Klick kopiert werden
+- **iCal calendar feed** — new endpoint `GET /api/calendar.ics` returns all upcoming tasks as an RFC 5545 iCal feed; add it in HA under Settings → Integrations → Calendar (iCal)
+- Tasks with a time appear as a timed event, tasks without a time as an all-day event
+- Recurring tasks are expanded 90 days ahead (max. 52 occurrences)
+- Priority is carried over as iCal PRIORITY (1/5/9)
+- The URL is shown in settings (HA tab) and can be copied with one click
 
 ---
 
 ## 1.6.4
 ### Improvements
-- **Fälligkeits-Logik**: `isSoon` (gelb) greift jetzt nur noch wenn die Task am **selben Kalendertag** fällig ist — kein 12h-Fenster-Bleed-over mehr in den Vortag
-- **Grace Period**: Task wird erst **1 Stunde nach** der Fälligkeit rot — zwischen 09:00 und 10:00 bleibt sie gelb
-- **Timezone-aware**: Kalender-Tag-Vergleich nutzt die konfigurierte App-Timezone (statt fester UTC-Grenze)
-- **Konsistent**: Alle Aufrufe in Tasks-Route, HA-Sensoren, Cron und Lovelace-Karte nutzen dieselbe Logik
+- **Due-status logic**: `isSoon` (yellow) now only applies when the task is due on the **same calendar day** — no more 12h-window bleed-over into the previous day
+- **Grace period**: A task only turns red **1 hour after** its due time — between 09:00 and 10:00 it stays yellow
+- **Timezone-aware**: Calendar-day comparison now uses the configured app timezone (instead of a fixed UTC boundary)
+- **Consistent**: All call sites in the tasks route, HA sensors, cron and Lovelace card use the same logic
 
 ---
 
 ## 1.6.3
 ### Improvements
-- **Wartend-Sektion**: Task-Namen werden als Chips angezeigt statt nur einem grauen Zähltext — Rauminhalt auf einen Blick sichtbar ohne Aufklappen
-- **„Wartend anzeigen"-Button**: Blauer Akzent-Stil (statt neutralem Grau) — deutlich auffälliger
-- **Section-Trenner**: Dünne Linie zwischen Raum-Sektionen für bessere Gliederung
+- **Waiting section**: Task names are now shown as chips instead of just a grey count text — room contents visible at a glance without expanding
+- **"Show waiting" button**: Blue accent style (instead of neutral grey) — much more noticeable
+- **Section dividers**: Thin line between room sections for better structure
 
 ---
 
 ## 1.6.2
 ### Improvements
-- **UI-Lesbarkeit**: Person-Tabs als Pills statt Full-Width-Balken; Tab-Zeile bei Single-User ohne Gamification ausgeblendet
-- **Raumfilter**: Aktiver Tab jetzt mit blauem Akzent statt neutralem Grau
-- **„Wartend anzeigen"-Button**: Mehr Padding, sichtbarer Hintergrund und Border, blauer Hover-Effekt
-- **Section-Header**: Etwas fetter und heller (text2 statt text3)
-- **Task-Schrift**: 0.88 → 0.93 rem für bessere Lesbarkeit
-- **Badges und Meta-Text**: Leicht vergrößert (+0.02 rem, +1px Padding)
-- **Wartend-Platzhalter**: Kursiv entfernt
+- **UI readability**: Person tabs now shown as pills instead of full-width bars; tab row hidden for single-user setups without gamification
+- **Room filter**: Active tab now uses a blue accent instead of neutral grey
+- **"Show waiting" button**: More padding, visible background and border, blue hover effect
+- **Section headers**: Slightly bolder and brighter (text2 instead of text3)
+- **Task font size**: 0.88 → 0.93 rem for better readability
+- **Badges and meta text**: Slightly enlarged (+0.02 rem, +1px padding)
+- **Waiting placeholder**: Italic style removed
 
 ---
 
 ## 1.6.1
 ### Bug Fixes
-- **NLP Quick-Add**: Einmalige Aufgaben (Datum erkannt) wurden mit `interval:'weekly'` statt `interval:'once'` gespeichert
-- **NLP-Tags**: Inline `border-color` hatte keinen Effekt — `.nlp-tag` hatte kein `border`-Basisstyle; auf `border: 1.5px solid transparent` gesetzt
-- **NLP-Parser**: Nutzer- und Rausnamen wurden ohne Escaping als RegExp-Muster verwendet — `esc()`-Helper ergänzt (verhindert ReDoS bei Sonderzeichen in Namen)
-- **Wöchentliche Zusammenfassung**: `data.settings.notifications?.ha` war immer `undefined` (falsy) — fix auf `user.haService` für HA-Push je Nutzer
-- **`showNotification`**: Funktion wurde aufgerufen, aber nie definiert — Auto-Dismiss-Toast hinzugefügt
-- **`/api/sync-timezone`**: Route fehlte komplett — `fetchHaConfig` in `ha.js` ergänzt und Route in `settings.js` registriert
-- **HA-Sensoren im Urlaub**: `updateHaSensors` ignorierte Urlaubsmodus — Sensoren zeigten weiterhin Live-Zählungen; Urlaubs-Guard ergänzt (alle Sensoren auf 0 während Urlaub)
-- **HA-Trigger Einmalaufgaben**: `checkHaTriggers` erstellte Aufgaben mit `interval:'once'` und `dueDate:null` — Aufgaben wurden nach Erledigung nicht archiviert sondern neu eingeplant; `dueDate: todayStr` ergänzt
-- **Abschluss-Animation**: `checkPulse` CSS-Animation-Klasse wurde im JS nie gesetzt und wäre durch DOM-Re-Render verloren gegangen — durch body-level `spawnPulseRing(x, y)` ersetzt
-- **Urlaubsbanner**: `#vacationBannerSub` wurde nie befüllt — Banner zeigte kein Enddatum; `X-Vacation-To` Header ausgelesen und in `render()` eingetragen
-- **`···`-Button Touch-Target**: Schaltfläche war ~18 px groß (Apple HIG-Minimum 44 px verfehlt) — auf `padding: 8px 10px; min-height: 36px` vergrößert
-- **Benachrichtigungskanal-Label**: "Notification channel" war hart auf Englisch kodiert — i18n-Keys `label.notify_channel`, `desc.notify_ha`, `desc.notify_email` ergänzt
-- **NLP-Eingabe**: Browser-Autocomplete und Autokorrektur im NLP-Eingabefeld wurden nicht unterdrückt — `autocomplete="off" autocorrect="off" spellcheck="false"` hinzugefügt
+- **NLP Quick-Add**: One-time tasks (date recognized) were saved with `interval:'weekly'` instead of `interval:'once'`
+- **NLP tags**: Inline `border-color` had no effect — `.nlp-tag` had no base `border` style; set to `border: 1.5px solid transparent`
+- **NLP parser**: User and room names were used as RegExp patterns without escaping — added an `esc()` helper (prevents ReDoS with special characters in names)
+- **Weekly summary**: `data.settings.notifications?.ha` was always `undefined` (falsy) — fixed to use `user.haService` for per-user HA push
+- **`showNotification`**: Function was called but never defined — added an auto-dismiss toast
+- **`/api/sync-timezone`**: Route was missing entirely — added `fetchHaConfig` to `ha.js` and registered the route in `settings.js`
+- **HA sensors during vacation**: `updateHaSensors` ignored vacation mode — sensors kept showing live counts; added a vacation guard (all sensors report 0 during vacation)
+- **HA trigger one-time tasks**: `checkHaTriggers` created tasks with `interval:'once'` and `dueDate:null` — tasks were rescheduled instead of archived after completion; added `dueDate: todayStr`
+- **Completion animation**: The `checkPulse` CSS animation class was never set in JS and would have been lost on DOM re-render — replaced with a body-level `spawnPulseRing(x, y)`
+- **Vacation banner**: `#vacationBannerSub` was never populated — banner showed no end date; now reads the `X-Vacation-To` header and fills it in `render()`
+- **`···` button touch target**: Button was ~18 px (missed the Apple HIG minimum of 44 px) — enlarged to `padding: 8px 10px; min-height: 36px`
+- **Notification channel label**: "Notification channel" was hardcoded in English — added i18n keys `label.notify_channel`, `desc.notify_ha`, `desc.notify_email`
+- **NLP input**: Browser autocomplete and autocorrect in the NLP input field were not suppressed — added `autocomplete="off" autocorrect="off" spellcheck="false"`
 
 ---
 
 ## 1.6.0
 ### Features
-- **Touch-Target & Haptic**: Haken-Button auf 36 × 36 px vergrößert (bessere Treffbarkeit); Vibration beim Abschluss (`[50, 30, 50]` ms Pattern)
-- **Abschluss-Animation**: Konfetti-Partikel und Pulsring erscheinen an der Position des Haken-Buttons wenn eine Aufgabe erledigt wird
-- **Long-Press Kontext-Menü**: 500 ms Drücken auf den Info-Bereich einer Kachel öffnet das Kontext-Menü — gleicher Inhalt wie `···`-Button, Vibration als Feedback
-- **Verbesserter Empty State**: Leere Aufgabenliste zeigt Icon, Titel und motivierenden Untertitel statt reinem Text
-- **Foto bei Abschluss**: Im Kommentar-Modal kann ein Foto aufgenommen oder aus der Galerie gewählt werden; wird komprimiert (240 × 240 px, JPEG 65 %) und in der Abschluss-Historie gespeichert
-- **Natürliche Sprache (Quick Add)**: `✨`-Button im Header öffnet ein Modal mit Freitexteingabe; Stichwörter für Intervall, Datum, Nutzer und Raum werden automatisch erkannt und als Tags angezeigt
-- **Wöchentliche Zusammenfassung**: Optionaler Cron-Job jeden Montag 07:00 UTC sendet eine Zusammenfassung der erledigten Aufgaben der letzten Woche via HA-Push und/oder E-Mail; Ein/Aus per Einstellungs-Toggle
-- **Urlaubs-Modus**: Zeitraum (Von / Bis) in den Einstellungen hinterlegen; während des Urlaubs werden Aufgaben nicht als fällig markiert, Benachrichtigungen werden pausiert und ein Banner am oberen Bildschirmrand wird eingeblendet
+- **Touch target & haptics**: Check button enlarged to 36 × 36 px (easier to hit); vibration on completion (`[50, 30, 50]` ms pattern)
+- **Completion animation**: Confetti particles and a pulse ring appear at the position of the check button when a task is completed
+- **Long-press context menu**: 500 ms press on a card's info area opens the context menu — same content as the `···` button, with vibration feedback
+- **Improved empty state**: Empty task list shows an icon, title and motivating subtitle instead of plain text
+- **Photo on completion**: The comment modal lets you take a photo or pick one from the gallery; it's compressed (240 × 240 px, JPEG 65%) and stored in the completion history
+- **Natural language (Quick Add)**: `✨` button in the header opens a modal with free-text input; keywords for interval, date, user and room are automatically recognized and shown as tags
+- **Weekly summary**: Optional cron job every Monday at 07:00 UTC sends a summary of last week's completed tasks via HA push and/or email; toggle on/off in settings
+- **Vacation mode**: Set a date range (from/to) in settings; during vacation, tasks aren't marked as due, notifications are paused and a banner is shown at the top of the screen
 
 ---
 
 ## 1.5.1
 ### Bug Fixes
-- **Edit-Modal**: "Weitere Optionen" wurde beim Öffnen nicht zurückgesetzt — blieb im zuletzt hinterlassenen Zustand; wird nun immer eingeklappt geöffnet
-- **Neu-Modal**: Wochentag- und Wochenend-Benachrichtigungszeiten wurden beim Öffnen nicht geleert
-- **i18n**: Toter Key `confirm.delete_task` entfernt (Löschen nutzt seit 1.5.0 einen Undo-Toast statt `window.confirm`)
+- **Edit modal**: "More options" wasn't reset on open — stayed in its last state; now always opens collapsed
+- **New modal**: Weekday and weekend notification times weren't cleared on open
+- **i18n**: Removed dead key `confirm.delete_task` (deletion has used an undo toast instead of `window.confirm` since 1.5.0)
 
 ---
 
 ## 1.5.0
 ### Features
-- **Drag-to-dismiss**: Modal-Handle ist jetzt funktional — nach unten wischen schließt Task-, Einstellungs- und Kommentar-Modal
-- **Kontext-Menü**: Kacheln haben jetzt einen `···`-Button der ein Kontext-Menü öffnet (Bearbeiten, Zurückstellen, Termin überspringen, Duplizieren, Löschen) — kein visuelles Chaos mit 5 Buttons pro Kachel mehr
-- **Undo für Löschen**: Löschen zeigt einen 5-Sekunden-Toast mit "Rückgängig"-Option statt sofort irreversibel zu löschen
-- **Einstellungen mit Tabs**: Einstellungs-Modal in 4 Tabs aufgeteilt (Allgemein / Nutzer & Räume / HA / Backup) statt einem langen Scroll
-- **Ladeindikator**: Speicher-Buttons (Aufgabe, Einstellungen) werden während des Speicherns deaktiviert und zeigen `…`; Haken-Button auf der Kachel wird während des Abschlusses deaktiviert; Zurückstellen/Überspringen sind gegen Doppel-Aufrufe abgesichert
+- **Drag-to-dismiss**: The modal handle is now functional — swiping down closes the task, settings and comment modals
+- **Context menu**: Cards now have a `···` button that opens a context menu (edit, snooze, skip occurrence, duplicate, delete) — no more visual clutter with 5 buttons per card
+- **Undo for delete**: Deleting now shows a 5-second toast with an "Undo" option instead of deleting immediately and irreversibly
+- **Tabbed settings**: Settings modal split into 4 tabs (General / Users & Rooms / HA / Backup) instead of one long scroll
+- **Loading indicator**: Save buttons (task, settings) are disabled while saving and show `…`; the check button on a card is disabled during completion; snooze/skip are guarded against double taps
 
 ---
 
 ## 1.4.3
 ### Improvements
-- **Tap-to-edit**: Tippen auf den Aufgaben-Namen/-Info-Bereich öffnet direkt den Bearbeitungsmodus
-- **Bearbeitungsmodal**: "Weitere Optionen" ist standardmäßig eingeklappt — saubere Ansicht beim Öffnen, bei Bedarf manuell erweiterbar
+- **Tap-to-edit**: Tapping a task's name/info area opens edit mode directly
+- **Edit modal**: "More options" is collapsed by default — clean view on open, expandable manually when needed
 
 ---
 
 ## 1.4.2
 ### Bug Fixes
-- **Skip-Route**: `getScheduledDueAt` durch `getDueAt` ersetzt — aufeinanderfolgende Skips ohne zwischenzeitliche Erledigung rückten die Aufgabe nicht weiter vor (blieben beim ersten Skip-Datum stecken)
-- **HA-Raum-Sensor**: Icon-Ternär war invertiert (`room.icon ? '' : 'mdi:door'` → `room.icon || 'mdi:door'`) — konfigurierte Icons wurden verworfen, ikonlose Räume korrekt
-- **Lovelace-Karte**: XSS-Lücke — `title` aus der Karten-Konfiguration wurde ohne Escaping in `innerHTML` eingefügt; `_esc()` wird nun angewendet
-- **Wochentag-Erkennung**: `new Date().getDay()` nutzte System-Timezone des Servers; `Intl.DateTimeFormat` mit konfigurierter App-Timezone wird nun für die Wochenend-Erkennung verwendet
-- **Raum nur wartend**: Räume mit ausschließlich wartenden Aufgaben wurden bei `showDone=false` vollständig aus dem DOM entfernt, obwohl der Button sie im Zähler führte; Räume bleiben nun sichtbar mit einem Hinweis-Text
-- **Legacy-Aufgaben**: `task.notifications?.ha` mit Optional-Chaining abgesichert — fehlende `notifications`-Felder (ältere Backups) führten zu `TypeError` beim Öffnen des Bearbeiten-Modals
+- **Skip route**: Replaced `getScheduledDueAt` with `getDueAt` — consecutive skips without a completion in between didn't advance the task (it stayed stuck at the first skip date)
+- **HA room sensor**: Icon ternary was inverted (`room.icon ? '' : 'mdi:door'` → `room.icon || 'mdi:door'`) — configured icons were discarded, iconless rooms got the fallback correctly
+- **Lovelace card**: XSS vulnerability — `title` from the card config was inserted into `innerHTML` without escaping; `_esc()` is now applied
+- **Weekday detection**: `new Date().getDay()` used the server's system timezone; `Intl.DateTimeFormat` with the configured app timezone is now used for weekend detection
+- **Room with only waiting tasks**: Rooms containing only waiting tasks were completely removed from the DOM when `showDone=false`, even though the toggle button counted them; rooms now stay visible with a hint text
+- **Legacy tasks**: Guarded `task.notifications?.ha` with optional chaining — missing `notifications` fields (older backups) caused a `TypeError` when opening the edit modal
 
 ---
 
