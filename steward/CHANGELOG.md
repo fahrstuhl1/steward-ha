@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.6.20
+### Improvements
+- **Refreshed task card design**: Task cards now have a softer, rounded look with a colored accent bar indicating due status, more depth via hover shadows, and a chip-style "Due now" / "Due soon" label
+- **Avatars on task cards**: Each task now shows a small colored initial avatar for the assigned person instead of a plain dot
+- **Priority flags**: High and low priority tasks are now marked with 🔺 / 🔻 flags instead of colored dots
+- **Smoother completion animation**: Completing a task now plays a collapse animation before the list refreshes, in addition to the existing confetti/pulse effect
+
 ## 1.6.19
 ### Fixes
 - **Completions are now recorded for the History view even when Gamification is disabled**: completions used to be written to `data.completions` only while the points/leaderboard system was enabled, so the new completion History view (1.6.18) stayed empty for households that turned Gamification off. Recording is now decoupled from that toggle — points are still computed and stored in the background but the leaderboard UI remains hidden as before

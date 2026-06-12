@@ -512,12 +512,14 @@ function taskCard(t) {
     badgeHtml = `<span class="badge" style="background:rgba(167,139,250,0.15);color:#a78bfa">${L('tab.all')}</span>`;
   } else {
     const u = getUserById(t.assignee);
-    badgeHtml = `<span class="badge" style="background:${(u?.color||'#7c819a')}22;color:${u?.color||'#7c819a'}">${u ? u.name : t.assignee}</span>`;
+    const color = u?.color || '#7c819a';
+    const initial = (u ? u.name : t.assignee).trim().charAt(0).toUpperCase();
+    badgeHtml = `<span class="badge" style="background:${color}22;color:${color}"><span class="task-avatar" style="background:${color}">${initial}</span>${u ? u.name : t.assignee}</span>`;
   }
 
   const intervalLabel = t.dueDate ? L('interval.once') : (t.intervalCustomDays ? L('interval.custom', {days: t.intervalCustomDays}) : (L('interval.' + t.interval) || t.interval));
   const notifyHint    = t.notifyOffset > 0 ? ` <span class="meta-text">${t.notifyOffset < 60 ? L('notify.hint_min', {n: t.notifyOffset}) : L('notify.hint_hour', {n: Math.round(t.notifyOffset/60)})}</span>` : '';
-  const priorityDot   = t.priority && t.priority !== 'normal' ? `<span class="priority-dot priority-${t.priority}"></span>` : '';
+  const priorityDot   = t.priority === 'high' ? `<span class="priority-flag">🔺</span>` : t.priority === 'low' ? `<span class="priority-flag">🔻</span>` : '';
   const snoozeHint    = isSnoozedNow ? `<div class="snooze-hint" onclick="event.stopPropagation();openSnoozeModal('${t.id}')">${L('snooze.hint', {time: new Date(t.snoozedUntil).toLocaleTimeString(document.documentElement.lang === 'de' ? 'de-DE' : 'en-GB', {hour:'2-digit',minute:'2-digit'})})}</div>` : '';
   const commentLine   = t.lastComment ? `<div class="comment-text">💬 ${t.lastComment}</div>` : '';
   const checkIcon     = (isWaiting || isPostponed) ? '⏳' : '✓';
@@ -574,6 +576,16 @@ async function toggleComplete(id) {
   }
 }
 
+function animateCardOut(id) {
+  return new Promise(resolve => {
+    const card = document.querySelector(`[data-id="${id}"]`);
+    if (!card) return resolve();
+    card.classList.add('completing');
+    card.addEventListener('animationend', () => resolve(), { once: true });
+    setTimeout(resolve, 450); // fallback in case animationend doesn't fire
+  });
+}
+
 async function submitComment(save) {
   document.getElementById('commentModal').classList.remove('open');
   if (!pendingCompleteId) return;
@@ -589,15 +601,16 @@ async function submitComment(save) {
     const completedId = pendingCompleteId;
     const completedName = tasks.find(t=>t.id===completedId)?.name || '';
     pendingCompleteId = null; pendingCompleteUserId = null;
-    await loadTasks();
     lastCompletedId = completedId;
-    showUndoToast(completedName);
     vibrate([50, 30, 50]);
     if (rect) {
       const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
       spawnPulseRing(cx, cy);
       spawnConfetti(cx, cy);
     }
+    await animateCardOut(completedId);
+    await loadTasks();
+    showUndoToast(completedName);
   } finally { btnLoading(checkBtn, false); }
 }
 
