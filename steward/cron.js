@@ -3,6 +3,7 @@ const { readData, writeData, isOnVacation } = require('./lib/data');
 const { getDueAt, getNotifyAt, isDue, timeOfDayStr } = require('./lib/time');
 const { sendHaNotify, sendEmail, tryLockNotify, unlockNotify } = require('./lib/notifications');
 const { updateHaSensors, checkHaTriggers } = require('./lib/ha');
+const { lang, t } = require('./lib/i18n');
 
 // 15-minute fallback: send missed notifications + 24h repeat for still-pending tasks
 cron.schedule('*/15 * * * *', async () => {
@@ -24,12 +25,17 @@ cron.schedule('*/15 * * * *', async () => {
       try {
         const allUsers = data.settings.users || [];
         const targets  = task.assignee === 'alle' ? allUsers.map(u => u.id) : [task.assignee];
+        const language = lang(data);
         const tod      = timeOfDayStr(getDueAt(task), data.settings.timezone);
-        const timeStr  = tod !== '00:00' ? ` at ${tod}` : '';
         const soon     = task.notifyOffset && task.notifyOffset > 0;
-        const msg      = `"${task.name}" is${soon ? ' almost' : ''} due${timeStr}`;
+        const msg      = t(language, 'notify.task_due_msg', {
+          name: task.name,
+          soon: soon ? t(language, 'notify.almost') : '',
+          time: tod !== '00:00' ? t(language, 'notify.at', { time: tod }) : ''
+        });
+        const title    = t(language, 'notify.task_due_title');
         for (const userId of targets) {
-          await sendHaNotify(data, userId, '🏠 Task due', msg, task.id);
+          await sendHaNotify(data, userId, title, msg, task.id);
           try { await sendEmail(data, userId, task.name, msg); } catch(e) {}
         }
         task.lastNotified = new Date().toISOString();
@@ -45,12 +51,16 @@ cron.schedule('*/15 * * * *', async () => {
         try {
           const allUsers = data.settings.users || [];
           const targets  = task.assignee === 'alle' ? allUsers.map(u => u.id) : [task.assignee];
+          const language = lang(data);
           const tod      = timeOfDayStr(getDueAt(task), data.settings.timezone);
-          const timeStr  = tod !== '00:00' ? ` at ${tod}` : '';
-          const msg      = `⚠️ Still pending: "${task.name}"${timeStr}`;
+          const msg      = t(language, 'notify.task_pending_msg', {
+            name: task.name,
+            time: tod !== '00:00' ? t(language, 'notify.at', { time: tod }) : ''
+          });
+          const title    = t(language, 'notify.task_pending_title');
           console.log(`[Notify] Repeat: ${msg}`);
           for (const userId of targets) {
-            await sendHaNotify(data, userId, '🏠 Reminder', msg, task.id);
+            await sendHaNotify(data, userId, title, msg, task.id);
             try { await sendEmail(data, userId, task.name, msg); } catch(e) {}
           }
           task.lastNotified = new Date().toISOString();
@@ -92,15 +102,20 @@ cron.schedule('0 7 * * 1', async () => {
   const recent = (data.completions || []).filter(c => new Date(c.date).getTime() > oneWeekAgo);
   if (!recent.length) return;
   const allUsers = data.settings.users || [];
+  const language = lang(data);
   const lines    = recent.map(c => {
     const u = allUsers.find(u => u.id === c.userId);
     return `• ${c.taskName} (${u ? u.name : c.userId})`;
   });
-  const msg = `Weekly summary: ${recent.length} task${recent.length !== 1 ? 's' : ''} completed\n` + lines.slice(0, 15).join('\n');
+  const header = recent.length === 1
+    ? t(language, 'notify.weekly_one')
+    : t(language, 'notify.weekly_many', { count: recent.length });
+  const msg   = header + '\n' + lines.slice(0, 15).join('\n');
+  const title = t(language, 'notify.weekly_title');
   console.log('[WeeklySummary]', msg);
   for (const user of allUsers) {
     if (user.haService) {
-      try { await sendHaNotify(data, user.id, '📋 Weekly Summary', msg, null); } catch(e) {}
+      try { await sendHaNotify(data, user.id, title, msg, null); } catch(e) {}
     }
     if (user.email && data.settings.gmailUser) {
       try { await sendEmail(data, user.id, 'Steward Weekly Summary', msg); } catch(e) {}

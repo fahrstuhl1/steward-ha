@@ -14,7 +14,12 @@ const STRINGS = {
     'notify.test_subject':    'Test',
     'notify.test_email_body': 'Email is working! 🎉',
     'notify.test_ha_title':   '🏠 Steward Test',
-    'notify.test_ha_body':    'HA push is working!'
+    'notify.test_ha_body':    'HA push is working!',
+    'notify.task_pending_title': '🏠 Reminder',
+    'notify.task_pending_msg':   '⚠️ Still pending: "{name}"{time}',
+    'notify.weekly_title':       '📋 Weekly Summary',
+    'notify.weekly_one':         'Weekly summary: 1 task completed',
+    'notify.weekly_many':        'Weekly summary: {count} tasks completed'
   },
   de: {
     'notify.task_due_title':  '🏠 Aufgabe fällig',
@@ -29,7 +34,12 @@ const STRINGS = {
     'notify.test_subject':    'Test',
     'notify.test_email_body': 'E-Mail funktioniert! 🎉',
     'notify.test_ha_title':   '🏠 Steward Test',
-    'notify.test_ha_body':    'HA-Push funktioniert!'
+    'notify.test_ha_body':    'HA-Push funktioniert!',
+    'notify.task_pending_title': '🏠 Erinnerung',
+    'notify.task_pending_msg':   '⚠️ Noch offen: „{name}"{time}',
+    'notify.weekly_title':       '📋 Wochenbericht',
+    'notify.weekly_one':         '1 Aufgabe diese Woche erledigt',
+    'notify.weekly_many':        '{count} Aufgaben diese Woche erledigt'
   }
 };
 

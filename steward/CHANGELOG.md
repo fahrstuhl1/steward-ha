@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.6.21
+### Fixes
+- **Cron-based notifications now fully localized**: Due reminders, repeat reminders (24 h+), and weekly summaries sent via the 15-minute cron fallback were still using hardcoded English strings. They now use the same i18n system as the timer-based notifications — titles, messages, and time fragments are translated according to the language set in Settings
+
 ## 1.6.20
 ### Improvements
 - **Refreshed task card design**: Task cards now have a softer, rounded look with a colored accent bar indicating due status, more depth via hover shadows, and a chip-style "Due now" / "Due soon" label

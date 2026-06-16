@@ -1,6 +1,6 @@
 {
   "name": "steward",
-  "version": "1.6.20",
+  "version": "1.6.21",
   "main": "server.js",
   "dependencies": {
     "express": "^4.18.2",
